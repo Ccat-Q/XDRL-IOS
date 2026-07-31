@@ -27,7 +27,6 @@ kotlin {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
-                implementation("com.squareup.okhttp3:okhttp:4.12.0")
             }
         }
         val iosMain by getting
