@@ -3,6 +3,12 @@
     id("org.jetbrains.compose")
 }
 
+repositories {
+    google()
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+}
+
 kotlin {
     applyDefaultHierarchyTemplate()
     listOf(
