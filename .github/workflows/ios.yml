@@ -47,6 +47,17 @@ jobs:
           -archivePath build/iosApp.xcarchive \
           CODE_SIGNING_ALLOWED=NO
 
+    - name: Verify .app bundle contents
+      run: |
+        echo "=== App bundle structure ==="
+        ls -la build/iosApp.xcarchive/Products/Applications/iosApp.app/
+        echo "=== Frameworks directory ==="
+        ls -la build/iosApp.xcarchive/Products/Applications/iosApp.app/Frameworks/ 2>/dev/null || echo "(no Frameworks dir - static linking)"
+        echo "=== Binary size ==="
+        ls -la build/iosApp.xcarchive/Products/Applications/iosApp.app/iosApp
+        echo "=== Check for Kotlin symbols in binary ==="
+        nm build/iosApp.xcarchive/Products/Applications/iosApp.app/iosApp 2>/dev/null | grep -i kfun | head -20 || echo "(no symbols found)"
+
     - name: Create IPA from xcarchive
       run: |
         mkdir -p build/ipa/Payload

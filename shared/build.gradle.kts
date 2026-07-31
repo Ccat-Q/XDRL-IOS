@@ -18,6 +18,7 @@ kotlin {
     ).forEach { target ->
         target.binaries.framework {
             baseName = "shared"
+            isStatic = true
         }
     }
 
