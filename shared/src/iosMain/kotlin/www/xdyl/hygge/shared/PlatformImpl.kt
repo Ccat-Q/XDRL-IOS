@@ -18,10 +18,13 @@ actual fun installResourcePack(prefs: Preferences) {
 }
 
 actual fun getDocumentsDir(): String {
-    val paths = NSSearchPathForDirectoriesInDomains(
-        NSDocumentDirectory, NSUserDomainMask, true
-    )
+    val paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)
     return (paths.first() as String)
+}
+
+actual fun writeFile(path: String, content: String): Boolean {
+    val fileManager = NSFileManager.defaultManager
+    return (content as NSString).writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
 }
 
 actual class Preferences {

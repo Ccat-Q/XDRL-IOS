@@ -1,4 +1,4 @@
-package www.xdyl.hygge.shared
+﻿package www.xdyl.hygge.shared
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,4 +19,10 @@ object Logger {
     }
 
     fun clear() { _logs.value = "" }
+
+    fun getRaw(): String = _logs.value
+
+    fun exportTo(path: String): Boolean {
+        return writeFile(path, _logs.value)
+    }
 }
