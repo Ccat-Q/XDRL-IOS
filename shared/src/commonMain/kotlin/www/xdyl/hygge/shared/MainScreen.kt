@@ -21,14 +21,15 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MainScreen() {
     var currentScreen by remember { mutableStateOf("main") }
-    var targetModsDir by remember { mutableStateOf("") }
     var progress by remember { mutableFloatStateOf(0f) }
     var statusText by remember { mutableStateOf("") }
     var downloading by remember { mutableStateOf(false) }
     val logText by Logger.logs.collectAsState()
+    val docsDir = remember { getDocumentsDir() }
 
     LaunchedEffect(Unit) {
-        Logger.i("App", "Nebula Updater 启动")
+        Logger.i("App", "Nebula Updater iOS 启动")
+        Logger.i("App", "Documents: $docsDir")
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFF1E1E1E))) {
@@ -37,9 +38,12 @@ fun MainScreen() {
         }) { screen ->
             when (screen) {
                 "main" -> MainView(
-                    targetModsDir = targetModsDir,
-                    onSelectDir = { Logger.i("UI", "选择目录"); statusText = "选择游戏目录..." },
-                    onStartDownload = { downloading = true; Logger.i("UI", "开始下载"); statusText = "下载中..." },
+                    docsDir = docsDir,
+                    onStartDownload = {
+                        downloading = true
+                        Logger.i("UI", "开始下载到 $docsDir")
+                        statusText = "下载中..."
+                    },
                     downloading = downloading,
                     logText = logText,
                     progress = progress,
@@ -47,7 +51,11 @@ fun MainScreen() {
                     onSettings = { currentScreen = "settings" }
                 )
                 "settings" -> SettingsView(
-                    onBack = { currentScreen = "main" }
+                    onBack = { currentScreen = "main" },
+                    onExtension = { currentScreen = "extension" }
+                )
+                "extension" -> ExtensionView(
+                    onBack = { currentScreen = "settings" }
                 )
             }
         }
@@ -56,8 +64,7 @@ fun MainScreen() {
 
 @Composable
 private fun MainView(
-    targetModsDir: String,
-    onSelectDir: () -> Unit,
+    docsDir: String,
     onStartDownload: () -> Unit,
     downloading: Boolean,
     logText: String,
@@ -65,26 +72,25 @@ private fun MainView(
     statusText: String,
     onSettings: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
+    ) {
+        // 标题行 + 设置按钮
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 22.sp)
-                Text("星云更新器", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 14.sp)
+                Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp)
+                Text("星云更新器", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp)
             }
-            IconButton(onClick = onSettings, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Default.Settings, contentDescription = "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(24.dp))
+            IconButton(onClick = onSettings, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Settings, contentDescription = "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp))
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
-        Button(
-            onClick = onSelectDir,
-            modifier = Modifier.fillMaxWidth().height(44.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)
-        ) { Text("选择游戏目录", fontSize = 16.sp) }
-        Spacer(Modifier.height(10.dp))
-
+        // 下载按钮
         Button(
             onClick = onStartDownload,
             enabled = !downloading,
@@ -92,8 +98,9 @@ private fun MainView(
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)
         ) { Text(if (downloading) "下载中..." else "开始下载", fontSize = 16.sp) }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
+        // 进度条
         if (progress > 0f) {
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
@@ -108,15 +115,14 @@ private fun MainView(
             Spacer(Modifier.height(6.dp))
         }
 
+        // 日志
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             val scroll = rememberScrollState()
             Text(
                 logText.ifEmpty { "日志将显示在这里..." },
                 modifier = Modifier.verticalScroll(scroll).padding(4.dp).fillMaxWidth(),
-                fontSize = 12.sp,
-                color = Color.LightGray,
-                maxLines = Int.MAX_VALUE,
-                overflow = TextOverflow.Clip
+                fontSize = 12.sp, color = Color.LightGray,
+                maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip
             )
         }
     }

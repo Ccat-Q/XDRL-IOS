@@ -1,10 +1,6 @@
 ﻿package www.xdyl.hygge.shared
 
-import platform.Foundation.NSFileManager
-import platform.Foundation.NSHomeDirectory
-import platform.Foundation.NSString
-import platform.Foundation.stringByAppendingPathComponent
-import androidx.compose.ui.window.ComposeUIViewController
+import platform.Foundation.*
 
 actual fun getLauncherRoot(): String = NSHomeDirectory()
 
@@ -18,11 +14,18 @@ actual fun getMinecraftDir(start: String): String? {
 }
 
 actual fun installResourcePack(prefs: Preferences) {
-    // 鍦?iOS 涓婂疄鐜版潗璐ㄥ寘瀹夎
+    Logger.i("Platform", "installResourcePack called")
+}
+
+actual fun getDocumentsDir(): String {
+    val paths = NSSearchPathForDirectoriesInDomains(
+        NSDocumentDirectory, NSUserDomainMask, true
+    )
+    return (paths.first() as String)
 }
 
 actual class Preferences {
-    private val userDefaults = platform.Foundation.NSUserDefaults.standardUserDefaults
+    private val userDefaults = NSUserDefaults.standardUserDefaults
 
     actual fun getString(key: String, default: String?): String? {
         return userDefaults.stringForKey(key) ?: default
@@ -43,8 +46,7 @@ actual class Preferences {
         userDefaults.setInteger(value.toLong(), forKey = key)
     }
     actual fun clear() {
-        val domain = platform.Foundation.NSBundle.mainBundle.bundleIdentifier ?: ""
+        val domain = NSBundle.mainBundle.bundleIdentifier ?: ""
         userDefaults.removePersistentDomainForName(domain)
     }
 }
-
