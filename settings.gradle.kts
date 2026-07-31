@@ -1,4 +1,4 @@
-pluginManagement {
+﻿pluginManagement {
     repositories {
         google()
         mavenCentral()
@@ -13,7 +13,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "xdyl"
-include(":app")
-include(":desktop")
 include(":shared")
 include(":iosApp")
