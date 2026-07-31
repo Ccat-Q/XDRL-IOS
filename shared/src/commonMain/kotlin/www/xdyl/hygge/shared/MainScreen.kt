@@ -17,6 +17,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.*
+
+// 默认 CSV（与服务端同步的模组列表）
+private val DEFAULT_CSV = """
+./Applied-Mekanistics-1.6.3.jar,147K,149709,0ef21d62aaa1e318f2f93adabe6c56a2,8946fea39451dbce8e709dedbef40a52ba337bdf7a25ac0c4b503800b1bf0773
+./AppliedFlux-1.21-2.1.5-neoforge.jar,338K,345117,aced1a1af01d7411772634aa13826a18,57e6a2c0f38e660c9e8416f9081d8c515f5ad096d6793d7b7f039e8e210d245b
+./Jade-1.21.1-NeoForge-15.10.5.jar,709K,725742,80f9186d25b02ebbfa5773416f5da410,067bb4b007e1d6f6b79f0afe99c91252aa825472b99a76d33a60d24442f9e92d
+./ImmediatelyFast-NeoForge-1.6.11+1.21.1.jar,354K,361795,f432a12463accb05290ea7de52fccc43,336df12f099d1a441a3e06850bea86e9c2d0c8bc022d3d9a201870a201562a04
+""".trimIndent()
+
+private data class ModFile(val name: String, val size: Long, val md5: String, val sha256: String)
+
+private fun parseCsv(csv: String): List<ModFile> {
+    return csv.lines().filter { it.isNotBlank() }.mapNotNull { line ->
+        val parts = line.split(",")
+        if (parts.size >= 5) {
+            val name = parts[0].trim('"').removePrefix("./")
+            val size = parts[2].toLongOrNull() ?: return@mapNotNull null
+            val md5 = parts[3].trim('"')
+            val sha256 = parts[4].trim('"')
+            ModFile(name, size, md5, sha256)
+        } else null
+    }
+}
 
 @Composable
 fun MainScreen() {
@@ -29,19 +53,75 @@ fun MainScreen() {
     val logText by Logger.logs.collectAsState()
     val docsDir = remember { getDocumentsDir() }
     val prefs = remember { Preferences() }
+    val scope = rememberCoroutineScope()
 
-    // 从持久化加载
+    // 持久化状态
     var versionName by remember { mutableStateOf(prefs.getString("version_folder", "1.21.1-NeoForge") ?: "1.21.1-NeoForge") }
     var threadCount by remember { mutableStateOf(prefs.getInt("thread_limit", 256).toString()) }
     var serverUrl by remember { mutableStateOf(prefs.getString("server_url", "http://82.157.155.86:5551/mods/") ?: "http://82.157.155.86:5551/mods/") }
     var cleanOrphan by remember { mutableStateOf(prefs.getBoolean("clean_orphan_files", true)) }
     var unlockThread by remember { mutableStateOf(prefs.getBoolean("unlock_thread_limit", false)) }
     var useLocalCsv by remember { mutableStateOf(prefs.getBoolean("use_local_csv", false)) }
+    // 强制刷新的key
+    var resetKey by remember { mutableStateOf(0) }
+
+    fun reloadPrefs() {
+        versionName = prefs.getString("version_folder", "1.21.1-NeoForge") ?: "1.21.1-NeoForge"
+        threadCount = prefs.getInt("thread_limit", 256).toString()
+        serverUrl = prefs.getString("server_url", "http://82.157.155.86:5551/mods/") ?: "http://82.157.155.86:5551/mods/"
+        cleanOrphan = prefs.getBoolean("clean_orphan_files", true)
+        unlockThread = prefs.getBoolean("unlock_thread_limit", false)
+        useLocalCsv = prefs.getBoolean("use_local_csv", false)
+        resetKey++
+    }
 
     LaunchedEffect(Unit) {
         Logger.i("App", "Nebula Updater iOS v1.0")
         Logger.i("App", "Documents: $docsDir")
         Logger.i("App", "服务器: $serverUrl")
+    }
+
+    // 下载逻辑
+    fun startDownload() {
+        downloading = true
+        progress = 0f
+        statusText = "解析文件列表..."
+        val mods = parseCsv(DEFAULT_CSV)
+        Logger.i("Download", "共 ${mods.size} 个文件")
+        if (mods.isEmpty()) {
+            downloading = false
+            statusText = "文件列表为空"
+            return
+        }
+        scope.launch {
+            val modsDir = "$docsDir/$versionName/mods"
+            writeToDocuments("$versionName/mods/.info", "服务器: $serverUrl")
+            var done = 0
+            var failed = 0
+            for ((i, mod) in mods.withIndex()) {
+                val url = serverUrl.trimEnd('/') + "/" + mod.name
+                val dest = "$modsDir/${mod.name}"
+                statusText = "[${i + 1}/${mods.size}] ${mod.name}"
+                Logger.i("Download", "[$i/${mods.size}] $url")
+                downloadFile(url, dest, { p ->
+                    progress = ((done + p) / mods.size)
+                }) { ok, msg ->
+                    if (ok) {
+                        done++
+                        Logger.i("Download", "OK: ${mod.name}")
+                    } else {
+                        failed++
+                        Logger.e("Download", "FAIL: ${mod.name} - $msg")
+                    }
+                    progress = done.toFloat() / mods.size
+                    if (done + failed >= mods.size) {
+                        downloading = false
+                        statusText = "完成: $done 成功, $failed 失败"
+                        Logger.i("Download", "完成: $done/$done+$failed")
+                    }
+                }
+            }
+        }
     }
 
     if (showAbout) {
@@ -70,7 +150,6 @@ fun MainScreen() {
                     for ((code, desc) in listOf(
                         "ERROR01" to "找不到游戏目录", "ERROR02" to "没有文件读写权限",
                         "ERROR03" to "网络连接超时", "ERROR05" to "模组文件校验失败",
-                        "ERROR06" to "版本文件夹不匹配", "ERROR07" to "NeoForge版本过低",
                         "ERROR08" to "无法获取文件列表", "ERROR10" to "未知错误"
                     )) {
                         Text("$code: $desc", color = Color.White, fontSize = 13.sp)
@@ -89,16 +168,16 @@ fun MainScreen() {
         }) { screen ->
             when (screen) {
                 "main" -> MainView(
-                    serverUrl = serverUrl,
-                    onStartDownload = { downloading = true; Logger.i("UI", "开始下载"); Logger.i("UI", "服务器: $serverUrl"); writeToDocuments("download_test.txt", "服务器: $serverUrl`n目标: $docsDir`n时间: 2026"); Logger.i("UI", "测试文件已写入Documents"); statusText = "已写入测试文件到文件App"; downloading = false },
+                    onStartDownload = { startDownload() },
                     downloading = downloading,
                     logText = logText,
                     progress = progress,
                     statusText = statusText,
                     onSettings = { currentScreen = "settings" },
                     onExportLog = {
-                        Logger.i("App", "导出日志到 Documents/nebula_log.txt")
-                        statusText = "日志已导出到文件App"
+                        val ok = writeToDocuments("nebula_log.txt", Logger.getRaw())
+                        if (ok) { Logger.i("App", "日志已导出"); statusText = "日志已导出到文件App" }
+                        else Logger.e("App", "导出失败")
                     }
                 )
                 "settings" -> SettingsView(
@@ -121,7 +200,12 @@ fun MainScreen() {
                     onUnlockChange = { unlockThread = it; prefs.putBoolean("unlock_thread_limit", it) },
                     useLocalCsv = useLocalCsv,
                     onLocalCsvChange = { useLocalCsv = it; prefs.putBoolean("use_local_csv", it) },
-                    onReset = { prefs.clear(); Logger.clear(); Logger.i("App", "所有设置已重置") },
+                    onReset = {
+                        prefs.clear()
+                        Logger.clear()
+                        reloadPrefs()
+                        Logger.i("App", "所有设置已重置")
+                    },
                     onBack = { currentScreen = "settings" }
                 )
             }
@@ -131,19 +215,11 @@ fun MainScreen() {
 
 @Composable
 private fun MainView(
-    serverUrl: String,
-    onStartDownload: () -> Unit,
-    downloading: Boolean,
-    logText: String,
-    progress: Float,
-    statusText: String,
-    onSettings: () -> Unit,
-    onExportLog: () -> Unit
+    onStartDownload: () -> Unit, downloading: Boolean, logText: String,
+    progress: Float, statusText: String, onSettings: () -> Unit, onExportLog: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize().padding(16.dp)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
     ) {
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -152,26 +228,21 @@ private fun MainView(
                 Text("星云更新器", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp)
             }
             IconButton(onClick = onSettings, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Settings, contentDescription = "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp))
+                Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp))
             }
         }
         Spacer(Modifier.height(12.dp))
 
-        Button(
-            onClick = onStartDownload,
-            enabled = !downloading,
-            modifier = Modifier.fillMaxWidth().height(44.dp),
-            shape = RoundedCornerShape(10.dp),
+        Button(onClick = onStartDownload, enabled = !downloading,
+            modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)
         ) { Text(if (downloading) "下载中..." else "开始下载", fontSize = 16.sp) }
         Spacer(Modifier.height(10.dp))
 
         if (progress > 0f) {
-            LinearProgressIndicator(
-                progress = { progress.coerceIn(0f, 1f) },
+            LinearProgressIndicator(progress = { progress.coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)
-            )
+                color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f))
             Spacer(Modifier.height(4.dp))
         }
         if (statusText.isNotEmpty()) {
@@ -181,23 +252,16 @@ private fun MainView(
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             val scroll = rememberScrollState()
-            Text(
-                logText.ifEmpty { "点击开始下载即可在文件App中查看" },
+            Text(logText.ifEmpty { "点击开始下载..." },
                 modifier = Modifier.verticalScroll(scroll).padding(4.dp).fillMaxWidth(),
-                fontSize = 12.sp, color = Color.LightGray,
-                maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip
-            )
+                fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip)
         }
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            TextButton(onClick = { Logger.clear(); Logger.i("App", "日志已清除") }) {
-                Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp)
-            }
-            TextButton(onClick = onExportLog) {
-                Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp)
-            }
+            TextButton(onClick = { Logger.clear(); Logger.i("App", "日志已清除") })
+                { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+            TextButton(onClick = onExportLog)
+                { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
         }
     }
 }
-
-
