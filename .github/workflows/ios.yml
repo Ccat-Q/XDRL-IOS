@@ -47,16 +47,14 @@ jobs:
           -archivePath build/iosApp.xcarchive \
           CODE_SIGNING_ALLOWED=NO
 
-    - name: Export IPA
+    - name: Create IPA from xcarchive
       run: |
-        xcodebuild -exportArchive \
-          -archivePath build/iosApp.xcarchive \
-          -exportOptionsPlist iosApp/ExportOptions.plist \
-          -exportPath build/ipa \
-          CODE_SIGNING_ALLOWED=NO
+        mkdir -p build/ipa/Payload
+        cp -R build/iosApp.xcarchive/Products/Applications/iosApp.app build/ipa/Payload/
+        cd build/ipa && zip -qr ../iosApp.ipa Payload && cd ../..
 
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
         name: iosApp.ipa
-        path: build/ipa/*.ipa
+        path: build/iosApp.ipa
