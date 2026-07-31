@@ -14,7 +14,7 @@ actual fun getMinecraftDir(start: String): String? {
 }
 
 actual fun installResourcePack(prefs: Preferences) {
-    Logger.i("Platform", "installResourcePack called")
+    writeToDocuments("resource_pack.txt", "installResourcePack called")
 }
 
 actual fun getDocumentsDir(): String {
@@ -22,9 +22,17 @@ actual fun getDocumentsDir(): String {
     return (paths.first() as String)
 }
 
-actual fun writeFile(path: String, content: String): Boolean {
-    val fileManager = NSFileManager.defaultManager
-    return (content as NSString).writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+actual fun writeToDocuments(filename: String, content: String): Boolean {
+    return try {
+        val docsDir = getDocumentsDir()
+        val filePath = (docsDir as NSString).stringByAppendingPathComponent(filename)
+        (content as NSString).writeToFile(filePath, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+        Logger.i("FileIO", "写入成功: $filePath")
+        true
+    } catch (e: Exception) {
+        Logger.e("FileIO", "写入失败: ${e.message}")
+        false
+    }
 }
 
 actual class Preferences {
@@ -53,3 +61,4 @@ actual class Preferences {
         userDefaults.removePersistentDomainForName(domain)
     }
 }
+
