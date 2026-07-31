@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 fun SettingsView(
     versionName: String, onVersionChange: (String) -> Unit,
     threadCount: String, onThreadChange: (String) -> Unit,
-    customPath: String, onCustomPathChange: (String) -> Unit,
+    serverUrl: String, onServerUrlChange: (String) -> Unit,
     cleanOrphan: Boolean, onCleanOrphanChange: (Boolean) -> Unit,
     onClearLog: () -> Unit, onAbout: () -> Unit, onErrorCodes: () -> Unit,
     onExtension: () -> Unit, onBack: () -> Unit
@@ -37,40 +37,64 @@ fun SettingsView(
         HorizontalDivider(color = Color(0xFF3A3A3A))
 
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text("版本文件夹名称", color = Color.Gray, fontSize = 13.sp)
-            Spacer(Modifier.height(6.dp))
-            OutlinedTextField(value = versionName, onValueChange = onVersionChange, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = Color.White),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
-            Spacer(Modifier.height(16.dp)); HorizontalDivider(color = Color(0xFF3A3A3A)); Spacer(Modifier.height(16.dp))
+            // 版本文件夹
+            SettingsLabel("版本文件夹名称")
+            SettingsTextField(versionName, onVersionChange)
+            SettingsDivider()
 
-            Text("下载线程数 (20-1024)", color = Color.Gray, fontSize = 13.sp)
-            Spacer(Modifier.height(6.dp))
-            OutlinedTextField(value = threadCount, onValueChange = { v -> v.toIntOrNull()?.let { onThreadChange(it.coerceIn(20, 1024).toString()) } }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = Color.White),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
-            Spacer(Modifier.height(16.dp)); HorizontalDivider(color = Color(0xFF3A3A3A)); Spacer(Modifier.height(16.dp))
+            // 线程数
+            SettingsLabel("下载线程数 (20-1024)")
+            SettingsTextField(threadCount) { v -> v.toIntOrNull()?.let { onThreadChange(it.coerceIn(20, 1024).toString()) } }
+            SettingsDivider()
 
-            Text("自定义下载路径", color = Color.Gray, fontSize = 13.sp)
-            Spacer(Modifier.height(6.dp))
-            OutlinedTextField(value = customPath, onValueChange = onCustomPathChange, singleLine = true, modifier = Modifier.fillMaxWidth(),
+            // 自定义服务器地址
+            SettingsLabel("下载服务器地址")
+            OutlinedTextField(
+                value = serverUrl, onValueChange = onServerUrlChange, singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = Color.White),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
-            Spacer(Modifier.height(16.dp)); HorizontalDivider(color = Color(0xFF3A3A3A)); Spacer(Modifier.height(12.dp))
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF))
+            )
+            SettingsDivider()
 
+            // 自动清理
             SwitchRow("更新后自动清理多余文件", cleanOrphan, onCleanOrphanChange)
-            HorizontalDivider(color = Color(0xFF3A3A3A)); Spacer(Modifier.height(20.dp))
+            HorizontalDivider(color = Color(0xFF3A3A3A))
+            Spacer(Modifier.height(20.dp))
 
-            OutlinedButton(onClick = onClearLog, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("清除日志", fontSize = 16.sp) }
-            Spacer(Modifier.height(10.dp))
-            OutlinedButton(onClick = onAbout, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("关于", fontSize = 16.sp) }
-            Spacer(Modifier.height(10.dp))
-            OutlinedButton(onClick = onErrorCodes, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("ERROR 错误代码", fontSize = 16.sp) }
+            SettingsButton("清除日志", onClearLog)
+            SettingsButton("关于") { onAbout() }
+            SettingsButton("ERROR 错误代码") { onErrorCodes() }
         }
     }
+}
+
+@Composable
+private fun SettingsLabel(text: String) {
+    Text(text, color = Color.Gray, fontSize = 13.sp)
+    Spacer(Modifier.height(6.dp))
+}
+
+@Composable
+private fun SettingsTextField(value: String, onChange: (String) -> Unit) {
+    OutlinedTextField(value = value, onValueChange = onChange, singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = Color.White),
+        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
+}
+
+@Composable
+private fun SettingsDivider() {
+    Spacer(Modifier.height(16.dp)); HorizontalDivider(color = Color(0xFF3A3A3A)); Spacer(Modifier.height(16.dp))
+}
+
+@Composable
+private fun SettingsButton(text: String, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().height(44.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))
+    ) { Text(text, fontSize = 16.sp) }
+    Spacer(Modifier.height(10.dp))
 }
 
 @Composable
