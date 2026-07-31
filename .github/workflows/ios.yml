@@ -34,11 +34,29 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build iOS framework (shared module)
-      run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+    - name: Build shared framework for iOS device
+      run: ./gradlew :shared:linkDebugFrameworkIosArm64
 
-    - name: Upload iOS framework
+    - name: Archive iOS app
+      run: |
+        xcodebuild archive \
+          -project iosApp/iosApp.xcodeproj \
+          -scheme iosApp \
+          -sdk iphoneos \
+          -configuration Debug \
+          -archivePath build/iosApp.xcarchive \
+          CODE_SIGNING_ALLOWED=NO
+
+    - name: Export IPA
+      run: |
+        xcodebuild -exportArchive \
+          -archivePath build/iosApp.xcarchive \
+          -exportOptionsPlist iosApp/ExportOptions.plist \
+          -exportPath build/ipa \
+          CODE_SIGNING_ALLOWED=NO
+
+    - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
-        name: ios-framework
-        path: shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework
+        name: iosApp.ipa
+        path: build/ipa/*.ipa
