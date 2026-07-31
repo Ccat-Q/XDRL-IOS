@@ -1,4 +1,4 @@
-package www.xdyl.hygge.shared
+﻿package www.xdyl.hygge.shared
 
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSHomeDirectory
@@ -18,7 +18,7 @@ actual fun getMinecraftDir(start: String): String? {
 }
 
 actual fun installResourcePack(prefs: Preferences) {
-    // 在 iOS 上实现材质包安装
+    // 鍦?iOS 涓婂疄鐜版潗璐ㄥ寘瀹夎
 }
 
 actual class Preferences {
@@ -48,4 +48,3 @@ actual class Preferences {
     }
 }
 
-fun MainViewController() = ComposeUIViewController { MainScreen() }
