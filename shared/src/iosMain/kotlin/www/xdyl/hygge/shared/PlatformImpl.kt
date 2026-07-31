@@ -1,7 +1,9 @@
 ﻿package www.xdyl.hygge.shared
 
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.*
 
+@OptIn(ExperimentalForeignApi::class)
 actual fun getLauncherRoot(): String = NSHomeDirectory()
 
 actual fun getMinecraftDir(start: String): String? {
