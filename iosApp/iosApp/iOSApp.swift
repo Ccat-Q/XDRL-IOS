@@ -19,7 +19,7 @@ struct ContentView: View {
 
 struct ComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        MainViewControllerKt.MainViewController()
+        PlatformKt.MainViewController()
     }
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
