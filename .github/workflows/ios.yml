@@ -26,10 +26,20 @@ jobs:
     - name: Cache Gradle packages
       uses: actions/cache@v4
       with:
-        path: ~/.gradle/caches
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
+
+    - name: Cache Kotlin/Native compiler
+      uses: actions/cache@v4
+      with:
+        path: ~/.konan
+        key: ${{ runner.os }}-konan-${{ hashFiles('shared/build.gradle.kts') }}
+        restore-keys: |
+          ${{ runner.os }}-konan-
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
