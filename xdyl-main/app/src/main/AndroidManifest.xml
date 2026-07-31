@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Nebula updater"
+        android:requestLegacyExternalStorage="true"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Xdyl"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name="www.xdyl.hygge.com.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="www.xdyl.hygge.com.SettingsActivity"
+            android:exported="true"
+            android:label="设置"
+            android:parentActivityName="www.xdyl.hygge.com.MainActivity" />
+        <activity
+            android:name="www.xdyl.hygge.com.EasterEggActivity"
+            android:exported="true"
+            android:label="扩展页面"
+            android:theme="@style/Theme.Xdyl" />
+        <activity
+            android:name="www.xdyl.hygge.com.AchievementActivity"
+            android:exported="true"
+            android:label="成就"
+            android:theme="@style/Theme.Xdyl" />
+    </application>
+</manifest>
