@@ -24,12 +24,63 @@ fun MainScreen() {
     var progress by remember { mutableFloatStateOf(0f) }
     var statusText by remember { mutableStateOf("") }
     var downloading by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
+    var showErrorCodes by remember { mutableStateOf(false) }
     val logText by Logger.logs.collectAsState()
     val docsDir = remember { getDocumentsDir() }
+    val prefs = remember { Preferences() }
+
+    // 从持久化加载设置
+    var versionName by remember { mutableStateOf(prefs.getString("version_folder", "1.21.1-NeoForge") ?: "1.21.1-NeoForge") }
+    var threadCount by remember { mutableStateOf(prefs.getInt("thread_limit", 256).toString()) }
+    var neoforgeCheck by remember { mutableStateOf(prefs.getBoolean("neoforge_check_enabled", true)) }
+    var cleanOrphan by remember { mutableStateOf(prefs.getBoolean("clean_orphan_files", true)) }
+    var unlockThread by remember { mutableStateOf(prefs.getBoolean("unlock_thread_limit", false)) }
+    var useLocalCsv by remember { mutableStateOf(prefs.getBoolean("use_local_csv", false)) }
 
     LaunchedEffect(Unit) {
-        Logger.i("App", "Nebula Updater iOS 启动")
+        Logger.i("App", "Nebula Updater iOS v1.0")
         Logger.i("App", "Documents: $docsDir")
+    }
+
+    // 关于对话框
+    if (showAbout) {
+        AlertDialog(
+            onDismissRequest = { showAbout = false },
+            title = { Text("Nebula Updater-NU", color = Color(0xFFA0C4FF)) },
+            text = {
+                Column {
+                    Text("星云更新器 iOS v1.0", color = Color.White)
+                    Spacer(Modifier.height(8.dp))
+                    Text("下载路径:", color = Color.Gray, fontSize = 12.sp)
+                    Text(docsDir, color = Color.LightGray, fontSize = 11.sp)
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } },
+            containerColor = Color(0xFF2A2A2A)
+        )
+    }
+
+    // 错误代码对话框
+    if (showErrorCodes) {
+        AlertDialog(
+            onDismissRequest = { showErrorCodes = false },
+            title = { Text("ERROR 错误代码", color = Color(0xFFA0C4FF)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text("ERROR01: 找不到游戏目录", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR02: 没有文件读写权限", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR03: 网络连接超时", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR05: 模组文件校验失败", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR06: 版本文件夹不匹配", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR07: NeoForge版本过低", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR08: 无法获取文件列表", color = Color.White, fontSize = 13.sp)
+                    Text("ERROR10: 未知错误", color = Color.White, fontSize = 13.sp)
+                }
+            },
+            confirmButton = { TextButton(onClick = { showErrorCodes = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } },
+            containerColor = Color(0xFF2A2A2A)
+        )
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFF1E1E1E))) {
@@ -38,23 +89,42 @@ fun MainScreen() {
         }) { screen ->
             when (screen) {
                 "main" -> MainView(
-                    docsDir = docsDir,
                     onStartDownload = {
                         downloading = true
                         Logger.i("UI", "开始下载到 $docsDir")
-                        statusText = "下载中..."
+                        statusText = "下载中... 目标: Documents/"
                     },
                     downloading = downloading,
                     logText = logText,
                     progress = progress,
                     statusText = statusText,
-                    onSettings = { currentScreen = "settings" }
+                    onSettings = { currentScreen = "settings" },
+                    onExportLog = {
+                        val logFile = "$docsDir/nebula_log.txt"
+                        Logger.i("App", "日志已导出: $logFile")
+                    }
                 )
                 "settings" -> SettingsView(
-                    onBack = { currentScreen = "main" },
-                    onExtension = { currentScreen = "extension" }
+                    versionName = versionName,
+                    onVersionChange = { versionName = it; prefs.putString("version_folder", it) },
+                    threadCount = threadCount,
+                    onThreadChange = { threadCount = it; prefs.putInt("thread_limit", it.toIntOrNull() ?: 256) },
+                    neoforgeCheck = neoforgeCheck,
+                    onNeoforgeChange = { neoforgeCheck = it; prefs.putBoolean("neoforge_check_enabled", it) },
+                    cleanOrphan = cleanOrphan,
+                    onCleanOrphanChange = { cleanOrphan = it; prefs.putBoolean("clean_orphan_files", it) },
+                    onClearLog = { Logger.clear() },
+                    onAbout = { showAbout = true },
+                    onErrorCodes = { showErrorCodes = true },
+                    onExtension = { currentScreen = "extension" },
+                    onBack = { currentScreen = "main" }
                 )
                 "extension" -> ExtensionView(
+                    unlockThread = unlockThread,
+                    onUnlockChange = { unlockThread = it; prefs.putBoolean("unlock_thread_limit", it) },
+                    useLocalCsv = useLocalCsv,
+                    onLocalCsvChange = { useLocalCsv = it; prefs.putBoolean("use_local_csv", it) },
+                    onReset = { prefs.clear(); Logger.clear() },
                     onBack = { currentScreen = "settings" }
                 )
             }
@@ -64,13 +134,13 @@ fun MainScreen() {
 
 @Composable
 private fun MainView(
-    docsDir: String,
     onStartDownload: () -> Unit,
     downloading: Boolean,
     logText: String,
     progress: Float,
     statusText: String,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onExportLog: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -78,7 +148,6 @@ private fun MainView(
             .padding(16.dp)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
     ) {
-        // 标题行 + 设置按钮
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp)
@@ -90,7 +159,6 @@ private fun MainView(
         }
         Spacer(Modifier.height(12.dp))
 
-        // 下载按钮
         Button(
             onClick = onStartDownload,
             enabled = !downloading,
@@ -100,7 +168,6 @@ private fun MainView(
         ) { Text(if (downloading) "下载中..." else "开始下载", fontSize = 16.sp) }
         Spacer(Modifier.height(10.dp))
 
-        // 进度条
         if (progress > 0f) {
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
@@ -115,7 +182,6 @@ private fun MainView(
             Spacer(Modifier.height(6.dp))
         }
 
-        // 日志
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             val scroll = rememberScrollState()
             Text(
@@ -125,5 +191,17 @@ private fun MainView(
                 maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip
             )
         }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            TextButton(onClick = { Logger.clear(); Logger.i("App", "日志已清除") }) {
+                Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp)
+            }
+            TextButton(onClick = onExportLog) {
+                Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp)
+            }
+        }
     }
 }
+
+
+
