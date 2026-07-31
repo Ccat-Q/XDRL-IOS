@@ -1,11 +1,9 @@
-plugins {
+﻿plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
-    id("com.android.library")
 }
 
 kotlin {
-    androidTarget()
     applyDefaultHierarchyTemplate()
     listOf(
         iosX64(),
@@ -27,23 +25,5 @@ kotlin {
             }
         }
         val iosMain by getting
-        val androidMain by getting {
-            dependencies {
-                implementation("androidx.activity:activity-compose:1.8.2")
-            }
-        }
-    }
-}
-
-android {
-    namespace = "www.xdyl.hygge.shared"
-    compileSdk = 35
-    defaultConfig {
-        minSdk = 28
-        targetSdk = 35
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }
