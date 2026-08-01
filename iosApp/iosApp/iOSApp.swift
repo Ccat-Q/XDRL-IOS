@@ -1,25 +1,19 @@
-import SwiftUI
+﻿import SwiftUI
 import shared
 
 @main
 struct iOSApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ComposeViewWrapper()
+                .ignoresSafeArea(.all)
         }
     }
 }
 
-struct ContentView: View {
-    var body: some View {
-        ComposeView()
-            .ignoresSafeArea(.all)
-    }
-}
-
-struct ComposeView: UIViewControllerRepresentable {
+struct ComposeViewWrapper: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         PlatformKt.MainViewController()
     }
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ vc: UIViewController, context: Context) {}
 }
