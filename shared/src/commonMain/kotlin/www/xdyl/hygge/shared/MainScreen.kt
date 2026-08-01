@@ -16,24 +16,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Download from manifest.json
+private val SAMPLE_CSV = """
+./Jade-1.21.1-NeoForge-15.10.5.jar,709K,725742,80f9186d25b02ebbfa5773416f5da410,067bb4b007e1d6f6b79f0afe99c91252aa825472b99a76d33a60d24442f9e92d
+./ImmediatelyFast-NeoForge-1.6.11+1.21.1.jar,354K,361795,f432a12463accb05290ea7de52fccc43,336df12f099d1a441a3e06850bea86e9c2d0c8bc022d3d9a201870a201562a04
+./Applied-Mekanistics-1.6.3.jar,147K,149709,0ef21d62aaa1e318f2f93adabe6c56a2,8946fea39451dbce8e709dedbef40a52ba337bdf7a25ac0c4b503800b1bf0773
+./AppliedFlux-1.21-2.1.5-neoforge.jar,338K,345117,aced1a1af01d7411772634aa13826a18,57e6a2c0f38e660c9e8416f9081d8c515f5ad096d6793d7b7f039e8e210d245b
+""".trimIndent()
+
 private data class ModFile(val name: String)
 
-private fun parseManifest(json: String): List<ModFile> {
-    val result = mutableListOf<ModFile>()
-    val key = ""name""
-    var pos = 0
-    while (true) {
-        val keyIdx = json.indexOf(key, pos)
-        if (keyIdx == -1) break
-        val colon = json.indexOf(':', keyIdx + key.length)
-        val qStart = json.indexOf('"', colon + 1)
-        val qEnd = json.indexOf('"', qStart + 1)
-        if (qStart == -1 || qEnd == -1) break
-        result.add(ModFile(json.substring(qStart + 1, qEnd)))
-        pos = qEnd + 1
-    }
-    return result
+private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
+    val p = l.split(","); if (p.size >= 3) ModFile(p[0].trim('"').removePrefix("./"), p[2].toLongOrNull() ?: return@mapNotNull null) else null
 }
 
 @Composable
@@ -78,11 +71,12 @@ fun MainScreen() {
 
     fun startDownload() {
         if (down) return
-        val manifestUrl = "${effectiveSrv.trimEnd('/')}/manifest.json"
-        status = "获取文件列表..."
-        fetchManifest(manifestUrl) { ok, json ->
-            if (!ok || json.isEmpty()) { down = false; status = "无法获取列表"; return@fetchManifest }
-        val mods = parseManifest(json)
+        val csvContent = if (localCsv && csvFiles.contains(csvFileName)) {
+            readFromDocuments(csvFileName) ?: run { status = "CSV不存在: $csvFileName"; return }
+        } else {
+            readFromDocuments("file_list.csv") ?: run { status = "无CSV"; return }
+        }
+        val mods = parseCsv(csvContent)
         if (mods.isEmpty()) { status = "列表为空"; return }
         down = true; progress = 0f
         Logger.i("DL", "===== ${mods.size} files =====")
