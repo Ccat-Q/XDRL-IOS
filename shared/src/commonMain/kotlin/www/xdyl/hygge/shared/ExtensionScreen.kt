@@ -31,6 +31,19 @@ fun ExtensionView(
         HorizontalDivider(color = Color(0xFF3A3A3A))
 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // 玻璃卡片：日志操作
+            Box(Modifier.fillMaxWidth().background(Color(0x1AFFFFFF), RoundedCornerShape(12.dp)).border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp)).padding(12.dp)) {
+                Column {
+                    Text("日志操作", color = Color(0xFFA0C4FF), fontSize = 14.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton({ Logger.clear(); Logger.i("App", "日志已清除") }, Modifier.weight(1f).height(40.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("清除日志", fontSize = 13.sp) }
+                        OutlinedButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); Logger.i("App", if (ok) "日志已导出" else "导出失败") }, Modifier.weight(1f).height(40.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("导出日志", fontSize = 13.sp) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+
             SwitchRow("使用 JSON Manifest", useJson, onUseJsonChange)
             HorizontalDivider(color = Color(0xFF3A3A3A))
             Spacer(Modifier.height(8.dp))
