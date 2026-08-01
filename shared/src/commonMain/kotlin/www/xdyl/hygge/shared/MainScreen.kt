@@ -23,7 +23,7 @@ private val SAMPLE_CSV = """
 ./AppliedFlux-1.21-2.1.5-neoforge.jar,338K,345117,aced1a1af01d7411772634aa13826a18,57e6a2c0f38e660c9e8416f9081d8c515f5ad096d6793d7b7f039e8e210d245b
 """.trimIndent()
 
-private data class ModFile(val name: String, val size: Long)
+private data class ModFile(val name: String)
 
 private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
     val p = l.split(","); if (p.size >= 3) ModFile(p[0].trim('"').removePrefix("./"), p[2].toLongOrNull() ?: return@mapNotNull null) else null
