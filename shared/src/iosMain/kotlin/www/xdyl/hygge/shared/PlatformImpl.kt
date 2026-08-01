@@ -73,7 +73,7 @@ actual fun pingServer(url: String, onResult: (Boolean, String) -> Unit) {
     val nsUrl = NSURL.URLWithString(url)
     if (nsUrl == null) { onResult(false, "无效URL"); return }
     val req = NSMutableURLRequest.requestWithURL(nsUrl)
-    req.setValue("HEAD", forHTTPHeaderField = "")
+    // use default GET
     val session = NSURLSession.sessionWithConfiguration(NSURLSessionConfiguration.defaultSessionConfiguration())
     session.dataTaskWithRequest(req) { _, response, error ->
         val elapsed = ((NSDate.timeIntervalSinceReferenceDate - start) * 1000).toInt()
@@ -92,5 +92,6 @@ actual class Preferences {
     actual fun putInt(key: String, value: Int) { ud.setInteger(value.toLong(), forKey = key); ud.synchronize() }
     actual fun clear() { val d = NSBundle.mainBundle.bundleIdentifier ?: ""; ud.removePersistentDomainForName(d); ud.synchronize() }
 }
+
 
 
