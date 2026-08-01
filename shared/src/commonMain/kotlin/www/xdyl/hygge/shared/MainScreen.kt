@@ -49,6 +49,7 @@ fun MainScreen() {
     var unlock by remember { mutableStateOf(prefs.getBoolean("unlock", false)) }
     var localCsv by remember { mutableStateOf(prefs.getBoolean("localcsv", false)) }
     var csvFileName by remember { mutableStateOf("files.csv") }
+    var useJson by remember { mutableStateOf(prefs.getBoolean("usejson", false)) }
     var devMode by remember { mutableStateOf(prefs.getBoolean("devmode", false)) }
 
     LaunchedEffect(Unit) {
@@ -114,3 +115,5 @@ fun MainScreen() {
 }
 
 
+
+private fun parseManifest(json: String): List<ModFile> { val result = mutableListOf<ModFile>(); val key = (34.toChar()).toString() + "name" + (34.toChar()).toString(); var pos = 0; while (true) { val keyIdx = json.indexOf(key, pos); if (keyIdx == -1) break; val colon = json.indexOf('':'', keyIdx + key.length); val qStart = json.indexOf('"', colon + 1); val qEnd = json.indexOf('"', qStart + 1); if (qStart == -1 || qEnd == -1) break; result.add(ModFile(json.substring(qStart + 1, qEnd))); pos = qEnd + 1 }; return result }
