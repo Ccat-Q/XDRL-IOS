@@ -25,9 +25,7 @@ private val SAMPLE_CSV = """
 
 private data class ModFile(val name: String)
 
-private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
-    val p = l.split(","); if (p.size >= 3) ModFile(p[0].trim('"').removePrefix("./"), p[2].toLongOrNull() ?: return@mapNotNull null) else null
-}
+
 
 @Composable
 fun MainScreen() {
