@@ -73,7 +73,7 @@ fun SettingsView(
             OutlinedButton(onClick = onNetwork, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("网络调试", fontSize = 16.sp) }
             Spacer(Modifier.height(16.dp))
-            Text("Nebula Updater iOS V1.0", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text("Nebula Updater iOS V1.1", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
