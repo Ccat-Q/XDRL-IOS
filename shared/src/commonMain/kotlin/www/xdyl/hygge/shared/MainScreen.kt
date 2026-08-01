@@ -51,7 +51,7 @@ fun MainScreen() {
 
     LaunchedEffect(Unit) {
         Logger.i("App", "===== Nebula Updater iOS =====")
-        writeToDocuments("样本文件列表.csv", SAMPLE_CSV)
+        writeToDocuments("file_list.csv", SAMPLE_CSV)
         Logger.i("App", "Documents: ${getDocumentsDir()}")
     }
 
@@ -72,7 +72,7 @@ fun MainScreen() {
         val csvContent = if (localCsv && csvFiles.contains(csvFileName)) {
             readFromDocuments(csvFileName) ?: run { status = "CSV不存在: $csvFileName"; return }
         } else {
-            readFromDocuments("样本文件列表.csv") ?: run { status = "无CSV"; return }
+            readFromDocuments("file_list.csv") ?: run { status = "无CSV"; return }
         }
         val mods = parseCsv(csvContent)
         if (mods.isEmpty()) { status = "列表为空"; return }
@@ -90,7 +90,7 @@ fun MainScreen() {
         when (screen) {
             "main" -> Column(Modifier.fillMaxSize().padding(16.dp).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) { Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp); Text("星云更新器", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
+                    Column(Modifier.weight(1f)) { Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp); Text("星云更新器-IOS", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
                     IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -104,8 +104,11 @@ fun MainScreen() {
                     TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "已导出" else "失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
                 }
             }
-            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" })
+            "network" -> NetworkView(srv) { screen = "settings" }
+            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
             "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = "http://82.157.155.86:5551/mods/"; clean = true; unlock = false; localCsv = false; Logger.i("App", "已重置") }, { screen = "settings" })
         }
     }
 }
+
+

@@ -21,7 +21,7 @@ fun SettingsView(
     serverUrl: String, onServerUrlChange: (String) -> Unit,
     cleanOrphan: Boolean, onCleanOrphanChange: (Boolean) -> Unit,
     onClearLog: () -> Unit, onAbout: () -> Unit, onErrorCodes: () -> Unit,
-    onExtension: () -> Unit, onBack: () -> Unit
+    onExtension: () -> Unit, onBack: () -> Unit, onNetwork: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().background(Color(0xFF1E1E1E))
         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
@@ -72,3 +72,4 @@ fun SettingsView(
         }
     }
 }
+
