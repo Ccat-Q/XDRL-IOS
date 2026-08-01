@@ -68,7 +68,19 @@ actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Un
     task.resume()
 }
 
-actual fun pingServer(url: String, onResult: (Boolean, String) -> Unit) { val start = NSDate.timeIntervalSinceReferenceDate; val nsUrl = NSURL.URLWithString(url); if (nsUrl == null) { onResult(false, "无效URL"); return }; val req = NSMutableURLRequest.requestWithURL(nsUrl); req.HTTPMethod = "HEAD"; req.timeoutInterval = 5.0; val session = NSURLSession.sessionWithConfiguration(NSURLSessionConfiguration.defaultSessionConfiguration()); session.dataTaskWithRequest(req) { _, response, error -> val elapsed = ((NSDate.timeIntervalSinceReferenceDate - start) * 1000).toInt(); if (error != null) { onResult(false, "失败: ${error.localizedDescription}") } else { val hr = response as? NSHTTPURLResponse; onResult(true, "HTTP ${hr?.statusCode ?: 0} (${elapsed}ms)") } }.resume() }
+actual fun pingServer(url: String, onResult: (Boolean, String) -> Unit) {
+    val start = NSDate.timeIntervalSinceReferenceDate
+    val nsUrl = NSURL.URLWithString(url)
+    if (nsUrl == null) { onResult(false, "无效URL"); return }
+    val req = NSMutableURLRequest.requestWithURL(nsUrl)
+    req.setValue("HEAD", forHTTPHeaderField = "")
+    val session = NSURLSession.sessionWithConfiguration(NSURLSessionConfiguration.defaultSessionConfiguration())
+    session.dataTaskWithRequest(req) { _, response, error ->
+        val elapsed = ((NSDate.timeIntervalSinceReferenceDate - start) * 1000).toInt()
+        if (error != null) onResult(false, "失败: ${error.localizedDescription}")
+        else { val hr = response as? NSHTTPURLResponse; onResult(true, "HTTP ${hr?.statusCode ?: 0} (${elapsed}ms)") }
+    }.resume()
+}
 
 actual class Preferences {
     private val ud = NSUserDefaults.standardUserDefaults
@@ -80,4 +92,5 @@ actual class Preferences {
     actual fun putInt(key: String, value: Int) { ud.setInteger(value.toLong(), forKey = key); ud.synchronize() }
     actual fun clear() { val d = NSBundle.mainBundle.bundleIdentifier ?: ""; ud.removePersistentDomainForName(d); ud.synchronize() }
 }
+
 
