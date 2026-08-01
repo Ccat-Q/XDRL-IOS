@@ -3,9 +3,6 @@ package www.xdyl.hygge.shared
 
 import kotlinx.cinterop.*
 import platform.Foundation.*
-import kotlinx.coroutines.*
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 actual fun getLauncherRoot(): String = NSHomeDirectory()
 
@@ -31,12 +28,24 @@ actual fun writeToDocuments(filename: String, content: String): Boolean {
     NSFileManager.defaultManager.createDirectoryAtPath(parent, true, null, null)
     val ok = (content as NSString).writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
     val exists = NSFileManager.defaultManager.fileExistsAtPath(path)
-    if (ok && exists) {
-        Logger.i("FileIO", "写入成功: $path")
-        return true
-    }
-    Logger.e("FileIO", "写入失败 ok=$ok exists=$exists path=$path")
+    if (ok && exists) { Logger.i("FileIO", "写入: $path"); return true }
+    Logger.e("FileIO", "写入失败 path=$path")
     return false
+}
+
+actual fun readFromDocuments(filename: String): String? {
+    val path = (getDocumentsDir() as NSString).stringByAppendingPathComponent(filename)
+    if (!NSFileManager.defaultManager.fileExistsAtPath(path)) {
+        Logger.w("FileIO", "文件不存在: $path")
+        return null
+    }
+    return NSString.stringWithContentsOfFile(path, encoding = NSUTF8StringEncoding, error = null) as? String
+}
+
+actual fun listDocumentsDir(): List<String> {
+    val fm = NSFileManager.defaultManager
+    val contents = fm.contentsOfDirectoryAtPath(getDocumentsDir(), error = null) ?: return emptyList()
+    return (contents as List<String>).filter { it.endsWith(".csv", ignoreCase = true) }
 }
 
 actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Unit, onComplete: (Boolean, String) -> Unit) {
@@ -48,14 +57,13 @@ actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Un
         if (error != null) { onComplete(false, error.localizedDescription); return@dataTaskWithRequest }
         val httpResponse = response as? NSHTTPURLResponse
         if (httpResponse == null || httpResponse.statusCode !in 200L..299L) { onComplete(false, "HTTP ${httpResponse?.statusCode}"); return@dataTaskWithRequest }
-        val body = data
-        if (body == null) { onComplete(false, "空响应"); return@dataTaskWithRequest }
+        val body = data ?: run { onComplete(false, "空响应"); return@dataTaskWithRequest }
         val parent = (destPath as NSString).stringByDeletingLastPathComponent
         NSFileManager.defaultManager.createDirectoryAtPath(parent, true, null, null)
         val ok = body.writeToFile(destPath, atomically = true)
         val exists = NSFileManager.defaultManager.fileExistsAtPath(destPath)
         if (ok && exists) onComplete(true, destPath)
-        else onComplete(false, "写入失败 ok=$ok exists=$exists")
+        else onComplete(false, "写入失败")
     }
     task.resume()
 }
