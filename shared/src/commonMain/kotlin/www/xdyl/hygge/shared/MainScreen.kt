@@ -1,4 +1,4 @@
-﻿package www.xdyl.hygge.shared
+package www.xdyl.hygge.shared
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
