@@ -25,9 +25,6 @@ private val SAMPLE_CSV = """
 
 private data class ModFile(val name: String)
 
-private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
-    val p = l.split(","); if (p.size >= 3) ModFile(p[0].trim('"').removePrefix("./"), p[2].toLongOrNull() ?: return@mapNotNull null) else null
-}
 
 @Composable
 fun MainScreen() {
@@ -58,7 +55,7 @@ fun MainScreen() {
     }
 
     fun downloadNext(mods: List<ModFile>, i: Int, ok: Int, fail: Int, dir: String) {
-        if (i >= mods.size) { down = false; progress = 1f; status = "$ok 成功, $fail 失败"; return }
+        if (i >= mods.size) { down = false; progress = 1f; status = "$ok 鎴愬姛, $fail 澶辫触"; return }
         val m = mods[i]
         progress = i.toFloat() / mods.size
         status = "[${i + 1}/${mods.size}] ${m.name}"
@@ -72,43 +69,43 @@ fun MainScreen() {
     fun startDownload() {
         if (down) return
         val csvContent = if (localCsv && csvFiles.contains(csvFileName)) {
-            readFromDocuments(csvFileName) ?: run { status = "CSV不存在: $csvFileName"; return }
+            readFromDocuments(csvFileName) ?: run { status = "CSV涓嶅瓨鍦? $csvFileName"; return }
         } else {
-            readFromDocuments("file_list.csv") ?: run { status = "无CSV"; return }
+            readFromDocuments("file_list.csv") ?: run { status = "鏃燙SV"; return }
         }
         val mods = parseCsv(csvContent)
-        if (mods.isEmpty()) { status = "列表为空"; return }
+        if (mods.isEmpty()) { status = "鍒楄〃涓虹┖"; return }
         down = true; progress = 0f
         Logger.i("DL", "===== ${mods.size} files =====")
         val dir = "${getDocumentsDir()}/$ver/mods"
         downloadNext(mods, 0, 0, 0, dir)
     }
 
-    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("Nebula Updater-NU 星云更新器 IOS版", color = Color(0xFFA0C4FF), fontSize = 20.sp) }, text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text("快速方便下载服务器模组", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(6.dp)); Text("本软件为开源项目", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(4.dp)); TextButton({ openUrl("https://github.com/Ccat-Q/XDRL-IOS") }) { Text("GitHub: Ccat-Q/XDRL-IOS", color = Color(0xFFA0C4FF), fontSize = 14.sp) }; Spacer(Modifier.height(6.dp)); Text("开发者：Ccat_Q", color = Color.LightGray, fontSize = 14.sp); Text("Android&Windows版: UNSA-Studio", color = Color.LightGray, fontSize = 14.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("Nebula Updater-NU 鏄熶簯鏇存柊鍣?IOS鐗?, color = Color(0xFFA0C4FF), fontSize = 20.sp) }, text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text("蹇€熸柟渚夸笅杞芥湇鍔″櫒妯＄粍", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(6.dp)); Text("鏈蒋浠朵负寮€婧愰」鐩?, color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(4.dp)); TextButton({ openUrl("https://github.com/Ccat-Q/XDRL-IOS") }) { Text("GitHub: Ccat-Q/XDRL-IOS", color = Color(0xFFA0C4FF), fontSize = 14.sp) }; Spacer(Modifier.height(6.dp)); Text("寮€鍙戣€咃細Ccat_Q", color = Color.LightGray, fontSize = 14.sp); Text("Android&Windows鐗? UNSA-Studio", color = Color.LightGray, fontSize = 14.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("纭畾", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
-    if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+    if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 鎵句笉鍒扮洰褰?,"ERROR02 鏃犳潈闄?,"ERROR03 缃戠粶瓒呮椂","ERROR05 鏍￠獙澶辫触","ERROR08 鏃犳硶鑾峰彇鍒楄〃","ERROR10 鏈煡閿欒").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("鍏抽棴", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     Box(Modifier.fillMaxSize().background(Color(0xFF1E1E1E))) {
         when (screen) {
             "main" -> Column(Modifier.fillMaxSize().padding(16.dp).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) { Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp); Text("星云更新器-IOS", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
-                    IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
+                    Column(Modifier.weight(1f)) { Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp); Text("鏄熶簯鏇存柊鍣?IOS", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
+                    IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "璁剧疆", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
                 }
                 Spacer(Modifier.height(12.dp))
-                Button({ startDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载", fontSize = 16.sp) }
+                Button({ startDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "涓嬭浇涓?.." else "寮€濮嬩笅杞?, fontSize = 16.sp) }
                 Spacer(Modifier.height(8.dp))
                 if (down || progress > 0f) { LinearProgressIndicator({ progress.coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)); if (status.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(status, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) } }
                 Spacer(Modifier.height(8.dp))
-                Box(Modifier.weight(1f).fillMaxWidth()) { if (devMode) Text(logText.ifEmpty { "通过文件App上传CSV到XDYL文件夹" }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
+                Box(Modifier.weight(1f).fillMaxWidth()) { if (devMode) Text(logText.ifEmpty { "閫氳繃鏂囦欢App涓婁紶CSV鍒癤DYL鏂囦欢澶? }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    TextButton({ Logger.clear() }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
-                    TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "已导出" else "失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                    TextButton({ Logger.clear() }) { Text("娓呴櫎鏃ュ織", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                    TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "宸插鍑? else "澶辫触" }) { Text("瀵煎嚭鏃ュ織", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
                 }
             }
             "network" -> NetworkView(srv) { screen = "settings" }
             "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
-            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
+            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; devMode = false; Logger.i("App", "宸查噸缃?) }, { screen = "settings" })
         }
     }
 }
