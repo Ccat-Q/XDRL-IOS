@@ -39,13 +39,15 @@ fun MainScreen() {
     var showErrors by remember { mutableStateOf(false) }
     val logText by Logger.logs.collectAsState()
     val prefs = remember { Preferences() }
+    val effectiveSrv = if (srv.isEmpty()) "http://82.157.155.86:5551/mods/" else srv
     val csvFiles by remember { derivedStateOf { listDocumentsDir() } }
 
     var ver by remember { mutableStateOf(prefs.getString("ver", "1.21.1-NeoForge") ?: "1.21.1-NeoForge") }
     var threads by remember { mutableStateOf(prefs.getInt("threads", 20).toString()) }
-    var srv by remember { mutableStateOf(prefs.getString("srv", "http://82.157.155.86:5551/mods/") ?: "http://82.157.155.86:5551/mods/") }
+    var srv by remember { mutableStateOf(prefs.getString("srv", "") ?: "") }
     var clean by remember { mutableStateOf(prefs.getBoolean("clean", true)) }
     var unlock by remember { mutableStateOf(prefs.getBoolean("unlock", false)) }
+    var devMode by remember { mutableStateOf(prefs.getBoolean("devmode", false)) }
     var localCsv by remember { mutableStateOf(prefs.getBoolean("localcsv", false)) }
     var csvFileName by remember { mutableStateOf("files.csv") }
 
@@ -60,8 +62,8 @@ fun MainScreen() {
         val m = mods[i]
         progress = i.toFloat() / mods.size
         status = "[${i + 1}/${mods.size}] ${m.name}"
-        Logger.i("DL", "GET ${srv.trimEnd('/')}/${m.name}")
-        downloadFile("${srv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
+        Logger.i("DL", "GET ${effectiveSrv.trimEnd('/')}/${m.name}")
+        downloadFile("${effectiveSrv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
             if (good) { Logger.i("DL", "OK"); downloadNext(mods, i + 1, ok + 1, fail, dir) }
             else { Logger.e("DL", "FAIL: $msg"); downloadNext(mods, i + 1, ok, fail + 1, dir) }
         }
@@ -98,17 +100,19 @@ fun MainScreen() {
                 Spacer(Modifier.height(8.dp))
                 if (down || progress > 0f) { LinearProgressIndicator({ progress.coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)); if (status.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(status, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) } }
                 Spacer(Modifier.height(8.dp))
-                Box(Modifier.weight(1f).fillMaxWidth()) { Text(logText.ifEmpty { "通过文件App上传CSV到XDYL文件夹" }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
+                Box(Modifier.weight(1f).fillMaxWidth()) { if (devMode) Text(logText.ifEmpty { "开发者模式已启用" }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip)).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     TextButton({ Logger.clear() }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
                     TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "已导出" else "失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
                 }
             }
             "network" -> NetworkView(srv) { screen = "settings" }
-            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
-            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = "http://82.157.155.86:5551/mods/"; clean = true; unlock = false; localCsv = false; Logger.i("App", "已重置") }, { screen = "settings" })
+            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" }, { screen = "network" }, devMode)
+            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
         }
     }
 }
+
+
 
 

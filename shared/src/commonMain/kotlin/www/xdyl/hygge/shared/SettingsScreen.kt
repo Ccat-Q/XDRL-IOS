@@ -49,7 +49,7 @@ fun SettingsView(
 
             Text("下载服务器地址", color = Color.Gray, fontSize = 13.sp)
             Spacer(Modifier.height(4.dp))
-            OutlinedTextField(serverUrl, onServerUrlChange, singleLine = true, modifier = Modifier.fillMaxWidth().height(48.dp),
+            OutlinedTextField(serverUrl, onServerUrlChange, singleLine = true, placeholder = { Text("不填写将使用默认值", color = Color.Gray, fontSize = 13.sp) }, modifier = Modifier.fillMaxWidth().height(48.dp),
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = Color.White),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
             Spacer(Modifier.height(12.dp))
@@ -75,3 +75,4 @@ fun SettingsView(
         }
     }
 }
+
