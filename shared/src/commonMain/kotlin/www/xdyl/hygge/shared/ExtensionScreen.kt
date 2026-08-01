@@ -1,4 +1,4 @@
-﻿package www.xdyl.hygge.shared
+package www.xdyl.hygge.shared
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 fun ExtensionView(
     unlockThread: Boolean, onUnlockChange: (Boolean) -> Unit,
     useLocalCsv: Boolean, onLocalCsvChange: (Boolean) -> Unit,
+    useJson: Boolean, onUseJsonChange: (Boolean) -> Unit,
     devMode: Boolean, onDevModeChange: (Boolean) -> Unit,
     onReset: () -> Unit, onBack: () -> Unit
 ) {
@@ -30,7 +31,10 @@ fun ExtensionView(
         HorizontalDivider(color = Color(0xFF3A3A3A))
 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
-            // 开发者模式
+            SwitchRow("使用 JSON Manifest", useJson, onUseJsonChange)
+            HorizontalDivider(color = Color(0xFF3A3A3A))
+            Spacer(Modifier.height(8.dp))
+
             SwitchRow("开发者模式", devMode, onDevModeChange)
             HorizontalDivider(color = Color(0xFF3A3A3A))
             Spacer(Modifier.height(8.dp))

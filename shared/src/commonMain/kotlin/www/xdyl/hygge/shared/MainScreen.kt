@@ -1,5 +1,7 @@
 package www.xdyl.hygge.shared
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,7 +28,25 @@ private val SAMPLE_CSV = """
 private data class ModFile(val name: String)
 
 private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
-    val p = l.split(","); if (p.size >= 3) ModFile(p[0].trim('"').removePrefix("./"), p[2].toLongOrNull() ?: return@mapNotNull null) else null
+    val p = l.split(","); ModFile(p[0].trim('"').removePrefix("./"))
+}
+
+private fun parseManifest(json: String): List<ModFile> {
+    val result = mutableListOf<ModFile>()
+    val q = (34.toChar()).toString()
+    val key = q + "name" + q
+    var pos = 0
+    while (true) {
+        val keyIdx = json.indexOf(key, pos)
+        if (keyIdx == -1) break
+        val colon = json.indexOf(':', keyIdx + key.length)
+        val qStart = json.indexOf('"', colon + 1)
+        val qEnd = json.indexOf('"', qStart + 1)
+        if (qStart == -1 || qEnd == -1) break
+        result.add(ModFile(json.substring(qStart + 1, qEnd)))
+        pos = qEnd + 1
+    }
+    return result
 }
 
 @Composable
@@ -48,13 +68,14 @@ fun MainScreen() {
     var clean by remember { mutableStateOf(prefs.getBoolean("clean", true)) }
     var unlock by remember { mutableStateOf(prefs.getBoolean("unlock", false)) }
     var localCsv by remember { mutableStateOf(prefs.getBoolean("localcsv", false)) }
-    var csvFileName by remember { mutableStateOf("files.csv") }
+    var useJson by remember { mutableStateOf(prefs.getBoolean("usejson", false)) }
     var devMode by remember { mutableStateOf(prefs.getBoolean("devmode", false)) }
+    var csvFileName by remember { mutableStateOf("files.csv") }
 
     LaunchedEffect(Unit) {
         Logger.i("App", "===== Nebula Updater iOS =====")
         writeToDocuments("file_list.csv", SAMPLE_CSV)
-        Logger.i("App", "Documents: ${getDocumentsDir()}")
+        Logger.i("App", "模式: ${if (useJson) "JSON Manifest" else "CSV文件"}")
     }
 
     fun downloadNext(mods: List<ModFile>, i: Int, ok: Int, fail: Int, dir: String) {
@@ -71,20 +92,36 @@ fun MainScreen() {
 
     fun startDownload() {
         if (down) return
-        val csvContent = if (localCsv && csvFiles.contains(csvFileName)) {
-            readFromDocuments(csvFileName) ?: run { status = "CSV不存在: $csvFileName"; return }
+        if (useJson) {
+            val manifestUrl = "${effectiveSrv.trimEnd('/')}/manifest.json"
+            status = "获取JSON列表..."
+            Logger.i("DL", "Fetching: $manifestUrl")
+            fetchManifest(manifestUrl) { ok, json ->
+                if (!ok || json.isEmpty()) { down = false; status = "无法获取manifest"; return@fetchManifest }
+                val mods = parseManifest(json)
+                if (mods.isEmpty()) { down = false; status = "列表为空"; return@fetchManifest }
+                down = true; progress = 0f
+                Logger.i("DL", "===== ${mods.size} files (JSON) =====")
+                val dir = "${getDocumentsDir()}/$ver/mods"
+                downloadNext(mods, 0, 0, 0, dir)
+            }
         } else {
-            readFromDocuments("file_list.csv") ?: run { status = "无CSV"; return }
+            val csvContent: String
+            if (localCsv && csvFiles.contains(csvFileName)) {
+                csvContent = readFromDocuments(csvFileName) ?: run { status = "CSV不存在"; return }
+            } else {
+                csvContent = readFromDocuments("file_list.csv") ?: run { status = "无CSV"; return }
+            }
+            val mods = parseCsv(csvContent)
+            if (mods.isEmpty()) { status = "列表为空"; return }
+            down = true; progress = 0f
+            Logger.i("DL", "===== ${mods.size} files (CSV) =====")
+            val dir = "${getDocumentsDir()}/$ver/mods"
+            downloadNext(mods, 0, 0, 0, dir)
         }
-        val mods = parseCsv(csvContent)
-        if (mods.isEmpty()) { status = "列表为空"; return }
-        down = true; progress = 0f
-        Logger.i("DL", "===== ${mods.size} files =====")
-        val dir = "${getDocumentsDir()}/$ver/mods"
-        downloadNext(mods, 0, 0, 0, dir)
     }
 
-    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("关于", color = Color(0xFFA0C4FF)) }, text = { Column { Text("Nebula Updater iOS v1.0", color = Color.White); Spacer(Modifier.height(4.dp)); Text("路径: ${getDocumentsDir()}", color = Color.LightGray, fontSize = 11.sp); Text("CSV: $csvFiles", color = Color.LightGray, fontSize = 11.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("Nebula Updater-NU 星云更新器 IOS版", color = Color(0xFFA0C4FF), fontSize = 20.sp) }, text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text("快速方便下载服务器模组", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(6.dp)); Text("本软件为开源项目", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(4.dp)); TextButton({ openUrl("https://github.com/Ccat-Q/XDRL-IOS") }) { Text("GitHub: Ccat-Q/XDRL-IOS", color = Color(0xFFA0C4FF), fontSize = 14.sp) }; Spacer(Modifier.height(6.dp)); Text("开发者：Ccat_Q", color = Color.LightGray, fontSize = 14.sp); Text("Android版: UNSA-Studio", color = Color.LightGray, fontSize = 14.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
@@ -96,21 +133,21 @@ fun MainScreen() {
                     IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
                 }
                 Spacer(Modifier.height(12.dp))
-                Button({ startDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载", fontSize = 16.sp) }
+                Button({ startDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载 (${if (useJson) "JSON" else "CSV"})", fontSize = 16.sp) }
                 Spacer(Modifier.height(8.dp))
                 if (down || progress > 0f) { LinearProgressIndicator({ progress.coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)); if (status.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(status, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) } }
                 Spacer(Modifier.height(8.dp))
-                Box(Modifier.weight(1f).fillMaxWidth()) { if (devMode) Text(logText.ifEmpty { "通过文件App上传CSV到XDYL文件夹" }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    TextButton({ Logger.clear() }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
-                    TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "已导出" else "失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                if (devMode) {
+                    Box(Modifier.weight(1f).fillMaxWidth()) { Text(logText.ifEmpty { "日志..." }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        TextButton({ Logger.clear() }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                        TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "已导出" else "失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                    }
                 }
             }
             "network" -> NetworkView(srv) { screen = "settings" }
             "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
-            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
+            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, useJson, { j -> useJson = j; prefs.putBoolean("usejson", j) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; useJson = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
         }
     }
 }
-
-
