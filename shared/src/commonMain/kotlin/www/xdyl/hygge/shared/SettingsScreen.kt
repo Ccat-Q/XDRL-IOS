@@ -68,15 +68,14 @@ fun SettingsView(
             }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onErrorCodes, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("ERROR 错误代码", fontSize = 16.sp) 
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("ERROR 错误代码", fontSize = 16.sp) }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(onClick = onNetwork, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("网络调试", fontSize = 16.sp) 
-            Spacer(Modifier.height(10.dp))
-            OutlinedButton(onClick = onErrorCodes}}
         }
     }
 }
+
 
 
 
