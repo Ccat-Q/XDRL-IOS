@@ -34,9 +34,9 @@ private fun parseCsv(csv: String): List<ModFile> = csv.lines().filter { it.isNot
 }
 
 // 主线程安全的状态更新包装
-private fun onMain(block: () -> Unit) {
-    GlobalScope.launch(Dispatchers.Main) { block() }
-}
+private val mainScope = MainScope()
+
+private fun onMain(block: () -> Unit) { mainScope.launch { block() } }
 
 @Composable
 fun MainScreen() {
@@ -182,3 +182,4 @@ private fun MainView(onStart: () -> Unit, down: Boolean, log: String, prog: Floa
         }
     }
 }
+
