@@ -16,7 +16,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// 样本CSV
 private val SAMPLE_CSV = """
 ./Jade-1.21.1-NeoForge-15.10.5.jar,709K,725742,80f9186d25b02ebbfa5773416f5da410,067bb4b007e1d6f6b79f0afe99c91252aa825472b99a76d33a60d24442f9e92d
 ./ImmediatelyFast-NeoForge-1.6.11+1.21.1.jar,354K,361795,f432a12463accb05290ea7de52fccc43,336df12f099d1a441a3e06850bea86e9c2d0c8bc022d3d9a201870a201562a04
@@ -52,46 +51,38 @@ fun MainScreen() {
 
     LaunchedEffect(Unit) {
         Logger.i("App", "===== Nebula Updater iOS =====")
-        // 生成样本CSV
-        val samplePath = "样本文件列表.csv"
-        writeToDocuments(samplePath, SAMPLE_CSV)
-        Logger.i("App", "样本CSV已写入: $samplePath")
+        writeToDocuments("样本文件列表.csv", SAMPLE_CSV)
         Logger.i("App", "Documents: ${getDocumentsDir()}")
-        Logger.i("App", "CSV文件: $csvFiles")
-    }
-
-    fun loadCsvAndDownload() {
-        if (down) return
-        val csvContent: String = if (localCsv && csvFiles.contains(csvFileName)) {
-            readFromDocuments(csvFileName) ?: run {
-                status = "CSV文件不存在: $csvFileName"; Logger.e("App", "CSV不存在"); return
-            }
-        } else {
-            readFromDocuments("样本文件列表.csv") ?: run {
-                Logger.i("App", "使用内置CSV"); return@run SAMPLE_CSV
-            }
-        }
-        val mods = parseCsv(csvContent)
-        if (mods.isEmpty()) { status = "列表为空"; return }
-        down = true; progress = 0f
-        Logger.i("DL", "===== ${mods.size} 文件 =====")
-        val dir = "${getDocumentsDir()}/$ver/mods"
-        downloadNext(mods, 0, 0, 0, dir)
     }
 
     fun downloadNext(mods: List<ModFile>, i: Int, ok: Int, fail: Int, dir: String) {
-        if (i >= mods.size) { down = false; progress = 1f; status = "$ok 成功, $fail 失败"; Logger.i("DL", "===== END ====="); return }
+        if (i >= mods.size) { down = false; progress = 1f; status = "$ok 成功, $fail 失败"; return }
         val m = mods[i]
         progress = i.toFloat() / mods.size
         status = "[${i + 1}/${mods.size}] ${m.name}"
         Logger.i("DL", "GET ${srv.trimEnd('/')}/${m.name}")
         downloadFile("${srv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
-            if (good) { Logger.i("DL", "OK: ${m.name}"); downloadNext(mods, i + 1, ok + 1, fail, dir) }
+            if (good) { Logger.i("DL", "OK"); downloadNext(mods, i + 1, ok + 1, fail, dir) }
             else { Logger.e("DL", "FAIL: $msg"); downloadNext(mods, i + 1, ok, fail + 1, dir) }
         }
     }
 
-    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("关于", color = Color(0xFFA0C4FF)) }, text = { Column { Text("Nebula Updater iOS v1.0", color = Color.White); Spacer(Modifier.height(8.dp)); Text("路径: ${getDocumentsDir()}", color = Color.LightGray, fontSize = 11.sp); Spacer(Modifier.height(4.dp)); Text("CSV文件: $csvFiles", color = Color.LightGray, fontSize = 11.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+    fun startDownload() {
+        if (down) return
+        val csvContent = if (localCsv && csvFiles.contains(csvFileName)) {
+            readFromDocuments(csvFileName) ?: run { status = "CSV不存在: $csvFileName"; return }
+        } else {
+            readFromDocuments("样本文件列表.csv") ?: run { status = "无CSV"; return }
+        }
+        val mods = parseCsv(csvContent)
+        if (mods.isEmpty()) { status = "列表为空"; return }
+        down = true; progress = 0f
+        Logger.i("DL", "===== ${mods.size} files =====")
+        val dir = "${getDocumentsDir()}/$ver/mods"
+        downloadNext(mods, 0, 0, 0, dir)
+    }
+
+    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("关于", color = Color(0xFFA0C4FF)) }, text = { Column { Text("Nebula Updater iOS v1.0", color = Color.White); Spacer(Modifier.height(4.dp)); Text("路径: ${getDocumentsDir()}", color = Color.LightGray, fontSize = 11.sp); Text("CSV: $csvFiles", color = Color.LightGray, fontSize = 11.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
@@ -103,8 +94,7 @@ fun MainScreen() {
                     IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
                 }
                 Spacer(Modifier.height(12.dp))
-                Button({ loadCsvAndDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载", fontSize = 16.sp) }
-                if (localCsv && csvFiles.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text("CSV: $csvFileName", color = Color.Gray, fontSize = 11.sp) }
+                Button({ startDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载", fontSize = 16.sp) }
                 Spacer(Modifier.height(8.dp))
                 if (down || progress > 0f) { LinearProgressIndicator({ progress.coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)); if (status.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(status, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) } }
                 Spacer(Modifier.height(8.dp))
