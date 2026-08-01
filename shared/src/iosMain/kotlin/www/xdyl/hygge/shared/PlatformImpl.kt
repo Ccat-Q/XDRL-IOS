@@ -3,6 +3,7 @@ package www.xdyl.hygge.shared
 
 import kotlinx.cinterop.*
 import platform.Foundation.*
+import platform.UIKit.UIApplication
 
 actual fun getLauncherRoot(): String = NSHomeDirectory()
 
@@ -67,6 +68,8 @@ actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Un
     }
     task.resume()
 }
+
+actual fun openUrl(url: String) { val nsUrl = NSURL.URLWithString(url); if (nsUrl != null) { UIApplication.sharedApplication.openURL(nsUrl) } }
 
 actual fun pingServer(url: String, onResult: (Boolean, String) -> Unit) {
     val start = NSDate.timeIntervalSinceReferenceDate

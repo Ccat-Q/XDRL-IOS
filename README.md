@@ -1,4 +1,4 @@
-# Nebula Updater-NU 星云更新器 iOS
+﻿# Nebula Updater-NU 星云更新器 iOS
 
 > 快速方便下载 Minecraft 模组服务器文件的 iOS 客户端
 
@@ -19,14 +19,6 @@
 2. 打开 App，点击「开始下载」
 3. 下载完成后在文件 App 中查看文件
 
-## ⚙️ 配置
-
-| 设置项 | 默认值 | 说明 |
-|--------|--------|------|
-| 下载服务器 | `http://82.157.155.86:5551/mods/` | 留空使用默认 |
-| 线程数 | 20 | 下载并发线程 |
-| 版本文件夹 | `1.21.1-NeoForge` | 目标版本目录名 |
-
 ## 🛠 技术栈
 
 - **Kotlin Multiplatform** + **Compose Multiplatform**
@@ -42,7 +34,3 @@
 ## 📄 开源协议
 
 MIT License
-
----
-
-> 基于 [xdyl](https://github.com/Ccat-Q/XDRL-IOS) 项目构建

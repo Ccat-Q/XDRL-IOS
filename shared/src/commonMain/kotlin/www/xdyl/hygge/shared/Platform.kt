@@ -8,4 +8,5 @@ expect fun writeToDocuments(filename: String, content: String): Boolean
 expect fun readFromDocuments(filename: String): String?
 expect fun listDocumentsDir(): List<String>
 expect fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Unit, onComplete: (Boolean, String) -> Unit)
+expect fun openUrl(url: String)
 expect fun pingServer(url: String, onResult: (Boolean, String) -> Unit)
