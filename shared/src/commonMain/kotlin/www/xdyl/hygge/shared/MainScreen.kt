@@ -16,102 +16,90 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// 模组列表
+private val CSV = """
+./Applied-Mekanistics-1.6.3.jar,147K,149709,0ef21d62aaa1e318f2f93adabe6c56a2,8946fea39451dbce8e709dedbef40a52ba337bdf7a25ac0c4b503800b1bf0773
+./AppliedFlux-1.21-2.1.5-neoforge.jar,338K,345117,aced1a1af01d7411772634aa13826a18,57e6a2c0f38e660c9e8416f9081d8c515f5ad096d6793d7b7f039e8e210d245b
+./Jade-1.21.1-NeoForge-15.10.5.jar,709K,725742,80f9186d25b02ebbfa5773416f5da410,067bb4b007e1d6f6b79f0afe99c91252aa825472b99a76d33a60d24442f9e92d
+./ImmediatelyFast-NeoForge-1.6.11+1.21.1.jar,354K,361795,f432a12463accb05290ea7de52fccc43,336df12f099d1a441a3e06850bea86e9c2d0c8bc022d3d9a201870a201562a04
+""".trimIndent()
+
+private data class ModFile(val name: String, val size: Long, val md5: String)
+
+private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
+    val p = l.split(","); if (p.size >= 4) ModFile(p[0].trim('"').removePrefix("./"), p[2].toLongOrNull() ?: return@mapNotNull null, p[3].trim('"')) else null
+}
+
 @Composable
 fun MainScreen() {
-    var currentScreen by remember { mutableStateOf("main") }
+    var screen by remember { mutableStateOf("main") }
     var progress by remember { mutableFloatStateOf(0f) }
-    var statusText by remember { mutableStateOf("") }
-    var downloading by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("") }
+    var down by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
-    var showErrorCodes by remember { mutableStateOf(false) }
+    var showErrors by remember { mutableStateOf(false) }
     val logText by Logger.logs.collectAsState()
+    val prefs = remember { Preferences() }
 
-    var downloadCount by remember { mutableStateOf(0) }
+    // 持久化状态
+    var ver by remember { mutableStateOf(prefs.getString("ver", "1.21.1-NeoForge") ?: "1.21.1-NeoForge") }
+    var threads by remember { mutableStateOf(prefs.getInt("threads", 20).toString()) }
+    var srv by remember { mutableStateOf(prefs.getString("srv", "http://82.157.155.86:5551/mods/") ?: "http://82.157.155.86:5551/mods/") }
+    var clean by remember { mutableStateOf(prefs.getBoolean("clean", true)) }
+    var unlock by remember { mutableStateOf(prefs.getBoolean("unlock", false)) }
+    var localCsv by remember { mutableStateOf(prefs.getBoolean("localcsv", false)) }
 
     LaunchedEffect(Unit) {
-        Logger.i("App", "===== Nebula Updater iOS v1.0 =====")
-        Logger.i("App", "Documents: ${getDocumentsDir()}")
-        val ok = writeToDocuments("readme.txt", "测试文件写入 - ${getDocumentsDir()}")
-        Logger.i("App", "启动文件写入: $ok")
+        Logger.i("App", "===== Nebula Updater iOS =====")
+        writeToDocuments("readme.txt", "Nebula Updater\n服务器: $srv")
     }
 
-    // 简单下载测试
-    fun testDownload() {
-        if (downloading) return
-        downloading = true
-        downloadCount++
-        progress = 0f
-        statusText = "测试下载 #$downloadCount..."
-        Logger.i("Test", "开始测试下载 #$downloadCount")
-        val docs = getDocumentsDir()
-        val url = "http://82.157.155.86:5551/mods/Jade-1.21.1-NeoForge-15.10.5.jar"
-        val dest = "$docs/test_download.jar"
-        Logger.i("Test", "URL: $url")
-        Logger.i("Test", "Dest: $dest")
-        downloadFile(url, dest, { pct ->
-            progress = pct
-            statusText = "进度: ${(pct * 100).toInt()}%"
-        }) { ok, msg ->
-            downloading = false
-            progress = if (ok) 1f else 0f
-            statusText = if (ok) "下载成功!" else "失败: $msg"
-            Logger.i("Test", if (ok) "下载成功" else "下载失败: $msg")
+    fun downloadNext(mods: List<ModFile>, i: Int, ok: Int, fail: Int, dir: String) {
+        if (i >= mods.size) { down = false; progress = 1f; status = "$ok 成功, $fail 失败"; return }
+        val m = mods[i]
+        progress = i.toFloat() / mods.size
+        status = "[${i + 1}/${mods.size}] ${m.name}"
+        Logger.i("DL", "GET ${srv.trimEnd('/')}/${m.name}")
+        downloadFile("${srv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
+            if (good) { Logger.i("DL", "OK: ${m.name}"); downloadNext(mods, i + 1, ok + 1, fail, dir) }
+            else { Logger.e("DL", "FAIL: ${m.name} $msg"); downloadNext(mods, i + 1, ok, fail + 1, dir) }
         }
     }
 
-    if (showAbout) AlertDialog(onDismissRequest = { showAbout = false },
-        title = { Text("关于", color = Color(0xFFA0C4FF)) },
-        text = { Text("Nebula Updater iOS v1.0\n路径: ${getDocumentsDir()}", color = Color.White) },
-        confirmButton = { TextButton(onClick = { showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } },
-        containerColor = Color(0xFF2A2A2A))
+    fun doDownload() {
+        if (down) return
+        val mods = parseCsv(CSV)
+        if (mods.isEmpty()) { status = "列表为空"; return }
+        down = true; progress = 0f
+        Logger.i("DL", "===== ${mods.size} files =====")
+        val dir = "${getDocumentsDir()}/$ver/mods"
+        downloadNext(mods, 0, 0, 0, dir)
+    }
 
-    if (showErrorCodes) AlertDialog(onDismissRequest = { showErrorCodes = false },
-        title = { Text("ERROR", color = Color(0xFFA0C4FF)) },
-        text = { Column {
-            listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) }
-        }},
-        confirmButton = { TextButton(onClick = { showErrorCodes = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } },
-        containerColor = Color(0xFF2A2A2A))
+    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("关于", color = Color(0xFFA0C4FF)) }, text = { Text("Nebula Updater iOS v1.0\n${getDocumentsDir()}", color = Color.White) }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+
+    if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     Box(Modifier.fillMaxSize().background(Color(0xFF1E1E1E))) {
-        when (currentScreen) {
+        when (screen) {
             "main" -> Column(Modifier.fillMaxSize().padding(16.dp).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp); Text("星云更新器", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
-                    IconButton(onClick = { currentScreen = "settings" }, modifier = Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
+                    IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), Modifier.size(22.dp)) }
                 }
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = { testDownload() }, enabled = !downloading, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (downloading) "下载中..." else "测试下载", fontSize = 16.sp) }
+                Button({ doDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载", fontSize = 16.sp) }
                 Spacer(Modifier.height(8.dp))
-                if (downloading || progress > 0f) {
-                    LinearProgressIndicator(progress = { progress.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f))
-                    if (statusText.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(statusText, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
-                }
+                if (down || progress > 0f) { LinearProgressIndicator({ progress.coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)); if (status.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(status, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) } }
                 Spacer(Modifier.height(8.dp))
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    Text(logText.ifEmpty { "日志..." }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip)
-                }
+                Box(Modifier.weight(1f).fillMaxWidth()) { Text(logText.ifEmpty { "日志..." }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    TextButton(onClick = { Logger.clear(); Logger.i("App", "日志已清除") }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
-                    TextButton(onClick = {
-                        val ok = writeToDocuments("nebula_log.txt", Logger.getRaw())
-                        statusText = if (ok) "日志已导出" else "导出失败"
-                        Logger.i("App", "导出: $ok")
-                    }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                    TextButton({ Logger.clear() }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
+                    TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "日志已导出" else "导出失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
                 }
             }
-            "settings" -> SettingsView(
-                "1.21.1-NeoForge", { Logger.i("Settings", "版本变更: $it") },
-                "256", { Logger.i("Settings", "线程: $it") },
-                "http://82.157.155.86:5551/mods/", { Logger.i("Settings", "服务器: $it") },
-                true, { Logger.i("Settings", "清理: $it") },
-                { Logger.clear() }, { showAbout = true }, { showErrorCodes = true },
-                { currentScreen = "extension" }, { currentScreen = "main" })
-            "extension" -> ExtensionView(
-                false, { Logger.i("Ext", "解锁: $it") }, false, { Logger.i("Ext", "CSV: $it") },
-                { Logger.clear(); Logger.i("Ext", "重置"); statusText = "已重置" },
-                { currentScreen = "settings" })
+            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" })
+            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = "http://82.157.155.86:5551/mods/"; clean = true; unlock = false; localCsv = false; Logger.i("App", "已重置") }, { screen = "settings" })
         }
     }
 }
