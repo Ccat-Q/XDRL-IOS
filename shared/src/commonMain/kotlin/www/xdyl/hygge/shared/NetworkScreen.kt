@@ -16,10 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun NetworkView(srv: String, onBack: () -> Unit, devMode: Boolean = false) {
+fun NetworkView(srv: String, onBack: () -> Unit) {
     var result by remember { mutableStateOf("") }
     var testing by remember { mutableStateOf(false) }
-    val effectiveSrv = if (srv.isEmpty()) "http://82.157.155.86:5551/mods/" else srv
     var testUrl by remember { mutableStateOf("") }
 
     Column(Modifier.fillMaxSize().background(Color(0xFF1E1E1E)).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
@@ -33,8 +32,8 @@ fun NetworkView(srv: String, onBack: () -> Unit, devMode: Boolean = false) {
             // 按钮1: 测试下载服务器
             Button({
                 testing = true; result = "正在连接下载服务器..."
-                Logger.i("Net", "测试下载服务器: $effectiveSrv")
-                pingServer(effectiveSrv) { ok, msg ->
+                Logger.i("Net", "测试下载服务器: $srv")
+                pingServer(srv) { ok, msg ->
                     testing = false; result = if (ok) "服务器连通: $msg" else "服务器不通: $msg"
                     Logger.i("Net", result)
                 }
@@ -95,4 +94,3 @@ fun NetworkView(srv: String, onBack: () -> Unit, devMode: Boolean = false) {
         }
     }
 }
-
