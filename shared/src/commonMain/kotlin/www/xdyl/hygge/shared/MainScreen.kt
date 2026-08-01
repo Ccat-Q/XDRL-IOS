@@ -123,7 +123,7 @@ private fun parseManifest(json: String): List<ModFile> {
     while (true) {
         val keyIdx = json.indexOf(key, pos)
         if (keyIdx == -1) break
-        val colon = json.indexOf('':'', keyIdx + key.length)
+        val colon = json.indexOf(':', keyIdx + key.length)
         val qStart = json.indexOf('"', colon + 1)
         val qEnd = json.indexOf('"', qStart + 1)
         if (qStart == -1 || qEnd == -1) break
