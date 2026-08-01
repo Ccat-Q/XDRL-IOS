@@ -84,7 +84,7 @@ fun MainScreen() {
         downloadNext(mods, 0, 0, 0, dir)
     }
 
-    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("关于", color = Color(0xFFA0C4FF)) }, text = { Column { Text("Nebula Updater iOS v1.0", color = Color.White); Spacer(Modifier.height(4.dp)); Text("路径: ${getDocumentsDir()}", color = Color.LightGray, fontSize = 11.sp); Text("CSV: $csvFiles", color = Color.LightGray, fontSize = 11.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+    if (showAbout) AlertDialog({ showAbout = false }, title = { Text("Nebula Updater-NU 星云更新器 IOS版", color = Color(0xFFA0C4FF), fontSize = 20.sp) }, text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text("快速方便下载服务器模组", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(6.dp)); Text("本软件为开源项目", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(4.dp)); TextButton({ openUrl("https://github.com/Ccat-Q/XDRL-IOS") }) { Text("GitHub: Ccat-Q/XDRL-IOS", color = Color(0xFFA0C4FF), fontSize = 14.sp) }; Spacer(Modifier.height(6.dp)); Text("开发者：Ccat_Q", color = Color.LightGray, fontSize = 14.sp); Text("Android&Windows版: UNSA-Studio", color = Color.LightGray, fontSize = 14.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
@@ -112,5 +112,6 @@ fun MainScreen() {
         }
     }
 }
+
 
 
