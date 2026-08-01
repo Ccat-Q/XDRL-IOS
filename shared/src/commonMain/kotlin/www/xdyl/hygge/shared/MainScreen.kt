@@ -1,4 +1,4 @@
-package www.xdyl.hygge.shared
+﻿package www.xdyl.hygge.shared
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,7 +43,8 @@ fun MainScreen() {
 
     var ver by remember { mutableStateOf(prefs.getString("ver", "1.21.1-NeoForge") ?: "1.21.1-NeoForge") }
     var threads by remember { mutableStateOf(prefs.getInt("threads", 20).toString()) }
-    var srv by remember { mutableStateOf(prefs.getString("srv", "http://82.157.155.86:5551/mods/") ?: "http://82.157.155.86:5551/mods/") }
+    var srv by remember { mutableStateOf(prefs.getString("srv", "") ?: "") }
+    val effectiveSrv = if (srv.isEmpty()) "http://82.157.155.86:5551/mods/" else srv
     var clean by remember { mutableStateOf(prefs.getBoolean("clean", true)) }
     var unlock by remember { mutableStateOf(prefs.getBoolean("unlock", false)) }
     var localCsv by remember { mutableStateOf(prefs.getBoolean("localcsv", false)) }
@@ -61,8 +62,8 @@ fun MainScreen() {
         val m = mods[i]
         progress = i.toFloat() / mods.size
         status = "[${i + 1}/${mods.size}] ${m.name}"
-        Logger.i("DL", "GET ${srv.trimEnd('/')}/${m.name}")
-        downloadFile("${srv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
+        Logger.i("DL", "GET ${effectiveSrv.trimEnd('/')}/${m.name}")
+        downloadFile("${effectiveSrv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
             if (good) { Logger.i("DL", "OK"); downloadNext(mods, i + 1, ok + 1, fail, dir) }
             else { Logger.e("DL", "FAIL: $msg"); downloadNext(mods, i + 1, ok, fail + 1, dir) }
         }
@@ -99,7 +100,7 @@ fun MainScreen() {
                 Spacer(Modifier.height(8.dp))
                 if (down || progress > 0f) { LinearProgressIndicator({ progress.coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = Color(0xFFA0C4FF), trackColor = Color(0xFFA0C4FF).copy(alpha = 0.2f)); if (status.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text(status, color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) } }
                 Spacer(Modifier.height(8.dp))
-                Box(Modifier.weight(1f).fillMaxWidth()) { Text(logText.ifEmpty { "通过文件App上传CSV到XDYL文件夹" }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
+                Box(Modifier.weight(1f).fillMaxWidth()) { if (devMode) Text(logText.ifEmpty { "通过文件App上传CSV到XDYL文件夹" }, Modifier.verticalScroll(rememberScrollState()).padding(4.dp).fillMaxWidth(), fontSize = 12.sp, color = Color.LightGray, maxLines = Int.MAX_VALUE, overflow = TextOverflow.Clip) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     TextButton({ Logger.clear() }) { Text("清除日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
                     TextButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); status = if (ok) "已导出" else "失败" }) { Text("导出日志", color = Color(0xFFA0C4FF), fontSize = 13.sp) }
