@@ -1,4 +1,4 @@
-﻿# Nebula Updater-NU 星云更新器 iOS
+# Nebula Updater-NU 星云更新器 iOS
 
 > 快速方便下载 Minecraft 模组服务器文件的 iOS 客户端
 
@@ -29,7 +29,7 @@
 ## 👨‍💻 开发者
 
 - iOS 版：**Ccat_Q**
-- Android & Windows 版：**UNSA-Studio**
+- Android 版：**UNSA-Studio**
 
 ## 📄 开源协议
 
