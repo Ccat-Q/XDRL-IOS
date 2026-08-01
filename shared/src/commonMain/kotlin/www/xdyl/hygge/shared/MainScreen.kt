@@ -107,7 +107,7 @@ fun MainScreen() {
             }
             "network" -> NetworkView(srv) { screen = "settings" }
             "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
-            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = "http://82.157.155.86:5551/mods/"; clean = true; unlock = false; localCsv = false; Logger.i("App", "已重置") }, { screen = "settings" })
+            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
         }
     }
 }
