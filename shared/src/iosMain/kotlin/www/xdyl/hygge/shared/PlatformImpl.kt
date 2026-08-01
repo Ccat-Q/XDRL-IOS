@@ -71,6 +71,8 @@ actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Un
 
 actual fun openUrl(url: String) { val nsUrl = NSURL.URLWithString(url); if (nsUrl != null) { UIApplication.sharedApplication.openURL(nsUrl) } }
 
+actual fun fetchManifest(url: String, onComplete: (Boolean, String) -> Unit) { val nsUrl = NSURL.URLWithString(url); if (nsUrl == null) { onComplete(false, ""); return }; val req = NSMutableURLRequest.requestWithURL(nsUrl); NSURLSession.sessionWithConfiguration(NSURLSessionConfiguration.defaultSessionConfiguration()).dataTaskWithRequest(req) { data, _, error -> if (error != null || data == null) { onComplete(false, ""); return }; val str = NSString.create(data = data, encoding = NSUTF8StringEncoding) as? String ?: ""; onComplete(str.isNotEmpty(), str) }.resume() }
+
 actual fun pingServer(url: String, onResult: (Boolean, String) -> Unit) {
     val start = NSDate.timeIntervalSinceReferenceDate
     val nsUrl = NSURL.URLWithString(url)
