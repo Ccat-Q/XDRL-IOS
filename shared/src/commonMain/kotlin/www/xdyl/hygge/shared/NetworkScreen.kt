@@ -33,7 +33,8 @@ fun NetworkView(srv: String, onBack: () -> Unit) {
             Button({
                 testing = true; result = "正在连接下载服务器..."
                 Logger.i("Net", "测试下载服务器: $srv")
-                pingServer(srv) { ok, msg ->
+                val effectiveSrv = if (srv.isEmpty()) "http://82.157.155.86:5551/mods/" else srv
+    pingServer(effectiveSrv) { ok, msg ->
                     testing = false; result = if (ok) "服务器连通: $msg" else "服务器不通: $msg"
                     Logger.i("Net", result)
                 }
