@@ -115,3 +115,20 @@ fun MainScreen() {
 
 
 
+
+private fun parseManifest(json: String): List<ModFile> {
+    val result = mutableListOf<ModFile>()
+    val key = """"name""""
+    var pos = 0
+    while (true) {
+        val keyIdx = json.indexOf(key, pos)
+        if (keyIdx == -1) break
+        val colon = json.indexOf('':'', keyIdx + key.length)
+        val qStart = json.indexOf('"', colon + 1)
+        val qEnd = json.indexOf('"', qStart + 1)
+        if (qStart == -1 || qEnd == -1) break
+        result.add(ModFile(json.substring(qStart + 1, qEnd)))
+        pos = qEnd + 1
+    }
+    return result
+}
