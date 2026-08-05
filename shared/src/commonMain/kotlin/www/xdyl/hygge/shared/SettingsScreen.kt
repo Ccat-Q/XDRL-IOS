@@ -21,6 +21,7 @@ fun SettingsView(
     serverUrl: String, onServerUrlChange: (String) -> Unit,
     cleanOrphan: Boolean, onCleanOrphanChange: (Boolean) -> Unit,
     unlockThread: Boolean,
+    csvUpdateResult: String?, onManualUpdateCsv: () -> Unit,
     onClearLog: () -> Unit, onAbout: () -> Unit, onErrorCodes: () -> Unit,
     onExtension: () -> Unit, onBack: () -> Unit, onNetwork: () -> Unit
 ) {
@@ -70,6 +71,13 @@ fun SettingsView(
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onErrorCodes, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("ERROR 错误代码", fontSize = 16.sp) }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onManualUpdateCsv, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("手动更新 CSV", fontSize = 16.sp) }
+            if (csvUpdateResult != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(csvUpdateResult ?: "", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 12.sp, modifier = Modifier.fillMaxWidth())
+            }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(onClick = onNetwork, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("网络调试", fontSize = 16.sp) }

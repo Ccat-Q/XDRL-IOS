@@ -80,6 +80,7 @@ fun checkVersionDifference(onResult: (Boolean, VersionDiff?, String) -> Unit) {
 /**
  * 下载最新 file_list.csv（带 X-API-Key），写入 Documents 并更新 local_version。
  * 完整性检查：至少 80 行，否则不保存。
+ * version 为空字符串时只更新文件、不写 local_version（用于手动更新）。
  */
 fun downloadNewCsv(version: String, onResult: (Boolean, String) -> Unit) {
     fetchWithHeaders("${API_BASE_URL}file_list.csv", mapOf("X-API-Key" to API_KEY)) { ok, csv ->
@@ -93,12 +94,27 @@ fun downloadNewCsv(version: String, onResult: (Boolean, String) -> Unit) {
         }
         val saved = writeToDocuments("file_list.csv", csv)
         if (saved) {
-            Preferences().putString("local_version", version)
-            Logger.i("CSV", "已更新 file_list.csv 至 v$version")
+            if (version.isNotEmpty()) {
+                Preferences().putString("local_version", version)
+                Logger.i("CSV", "已更新 file_list.csv 至 v$version")
+            } else {
+                Logger.i("CSV", "已更新 file_list.csv")
+            }
             onResult(true, "")
         } else {
             onResult(false, "保存失败")
         }
+    }
+}
+
+/**
+ * 手动更新 CSV：拉取版本号后强制下载最新 file_list.csv。
+ * 用于设置页"手动更新 CSV"按钮，绕过版本差异检查。
+ */
+fun downloadLatestCsv(onResult: (Boolean, String) -> Unit) {
+    fetchWithHeaders("${API_BASE_URL}Version_difference.json", mapOf("X-API-Key" to API_KEY)) { ok, body ->
+        val version = if (ok) extractJsonString(body, "version") else null
+        downloadNewCsv(version ?: "", onResult)
     }
 }
 

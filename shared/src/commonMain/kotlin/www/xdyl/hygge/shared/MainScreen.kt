@@ -51,6 +51,7 @@ fun MainScreen() {
     var showErrors by remember { mutableStateOf(false) }
     var csvDiff by remember { mutableStateOf<VersionDiff?>(null) }
     var updateResult by remember { mutableStateOf<String?>(null) }
+    var csvUpdateResult by remember { mutableStateOf<String?>(null) }
     val logText by Logger.logs.collectAsState()
     val prefs = remember { Preferences() }
     val csvFiles by remember { derivedStateOf { listDocumentsDir() } }
@@ -183,7 +184,7 @@ fun MainScreen() {
                 }
             }
             "network" -> NetworkView(srv) { screen = "settings" }
-            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, unlock, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
+            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, unlock, csvUpdateResult, { csvUpdateResult = "更新中..."; downloadLatestCsv { ok, msg -> csvUpdateResult = if (ok) "CSV 已更新" else "更新失败: $msg" } }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
             "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, useJson, { j -> useJson = j; prefs.putBoolean("usejson", j) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, csvFiles, csvFileName, { f -> csvFileName = f }, whitelist, { w -> whitelist = w; prefs.putStringList("mod_whitelist", w) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; useJson = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
             }
         }
@@ -217,12 +218,14 @@ private fun GlassDialog(
                 Box(
                     Modifier
                         .fillMaxWidth(0.88f)
+                        .widthIn(min = 280.dp, max = 420.dp)
+                        .heightIn(max = 460.dp)
                         .liquidGlass()
                         .clickable(enabled = true, interactionSource = remember { MutableInteractionSource() }, indication = null) { }
                         .padding(20.dp)
                 ) {
                     Column {
-                        Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                        Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Spacer(Modifier.height(10.dp))
                         HorizontalDivider(color = Color(0x40FFFFFF))
                         Spacer(Modifier.height(10.dp))
