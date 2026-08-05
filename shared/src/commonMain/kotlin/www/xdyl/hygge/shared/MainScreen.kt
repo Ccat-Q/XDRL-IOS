@@ -60,6 +60,24 @@ fun MainScreen() {
         }
     }
 
+    fun runEngine(mods: List<ModFile>, threadCount: Int) {
+        val dir = "${getDocumentsDir()}/$ver/mods"
+        DownloadEngine(
+            threads = threadCount,
+            cleanOrphans = clean,
+            whitelist = emptyList(),
+            baseUrl = effectiveSrv,
+            destDir = dir,
+            onStatus = { status = it },
+            onProgress = { progress = it },
+            onFinish = { ok, skipped, fail ->
+                down = false; progress = 1f
+                status = "$ok 成功, $skipped 跳过, $fail 失败"
+                Logger.i("DL", "完成: $ok 成功, $skipped 跳过, $fail 失败")
+            }
+        ).start(mods)
+    }
+
     fun startDownload() {
         if (down) return
         val threadCount = threads.toIntOrNull()?.coerceIn(20, if (unlock) 1024 else 128) ?: 20
@@ -88,24 +106,6 @@ fun MainScreen() {
             Logger.i("DL", "===== ${mods.size} files (CSV) =====")
             runEngine(mods, threadCount)
         }
-    }
-
-    fun runEngine(mods: List<ModFile>, threadCount: Int) {
-        val dir = "${getDocumentsDir()}/$ver/mods"
-        DownloadEngine(
-            threads = threadCount,
-            cleanOrphans = clean,
-            whitelist = emptyList(),
-            baseUrl = effectiveSrv,
-            destDir = dir,
-            onStatus = { status = it },
-            onProgress = { progress = it },
-            onFinish = { ok, skipped, fail ->
-                down = false; progress = 1f
-                status = "$ok 成功, $skipped 跳过, $fail 失败"
-                Logger.i("DL", "完成: $ok 成功, $skipped 跳过, $fail 失败")
-            }
-        ).start(mods)
     }
 
     if (showAbout) AlertDialog({ showAbout = false }, title = { Text("Nebula Updater-NU 星云更新器 IOS版", color = Color(0xFFA0C4FF), fontSize = 20.sp) }, text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text("快速方便下载服务器模组", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(6.dp)); Text("本软件为开源项目", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(4.dp)); TextButton({ openUrl("https://github.com/Ccat-Q/XDRL-IOS") }) { Text("GitHub: Ccat-Q/XDRL-IOS", color = Color(0xFFA0C4FF), fontSize = 14.sp) }; Spacer(Modifier.height(6.dp)); Text("开发者：Ccat_Q", color = Color.LightGray, fontSize = 14.sp); Text("Android版: UNSA-Studio", color = Color.LightGray, fontSize = 14.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))

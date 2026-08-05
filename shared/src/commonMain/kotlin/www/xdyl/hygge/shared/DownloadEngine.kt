@@ -1,5 +1,6 @@
 package www.xdyl.hygge.shared
 
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -198,7 +199,7 @@ class DownloadEngine(
         suspendCancellableCoroutine { cont ->
             downloadFile(url, destPath, onProgress = { }, onComplete = { good, _ ->
                 if (cont.isActive) {
-                    if (good) cont.resume(true) else cont.resume(false)
+                    if (good) cont.resume(true, null) else cont.resume(false, null)
                 }
             })
         }

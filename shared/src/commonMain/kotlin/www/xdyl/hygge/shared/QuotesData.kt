@@ -1,8 +1,5 @@
 package www.xdyl.hygge.shared
 
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
-
 /**
  * 每日名言数据 + 选择逻辑（Kotlin Multiplatform / commonMain）。
  *
@@ -361,12 +358,11 @@ fun quoteForDay(epochDay: Long): Quote {
 }
 
 /**
- * 取今天的名言：用 kotlin.time.Clock.System 取当前毫秒时间，
+ * 取今天的名言：用平台时间取当前毫秒时间，
  * 除以一天的毫秒数得到天数，再交给 [quoteForDay] 轮换选取。
  */
-@OptIn(ExperimentalTime::class)
 fun todayQuote(): Quote {
-    val ms = Clock.System.now().toEpochMilliseconds()
+    val ms = currentTimeMillis()
     val day = ms / 86_400_000L
     return quoteForDay(day)
 }

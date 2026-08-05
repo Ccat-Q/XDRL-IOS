@@ -72,6 +72,8 @@ actual fun listJarsInDir(dir: String): List<String> {
 
 actual fun deleteFile(path: String): Boolean = NSFileManager.defaultManager.removeItemAtPath(path, error = null)
 
+actual fun currentTimeMillis(): Long = (NSDate().timeIntervalSince1970 * 1000).toLong()
+
 actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Unit, onComplete: (Boolean, String) -> Unit) {
     val nsUrl = NSURL.URLWithString(url)
     if (nsUrl == null) { onComplete(false, "无效URL"); return }

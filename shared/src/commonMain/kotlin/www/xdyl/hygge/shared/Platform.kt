@@ -15,3 +15,4 @@ expect fun fileSize(path: String): Long?
 expect fun readFileBytes(path: String): ByteArray?
 expect fun listJarsInDir(dir: String): List<String>
 expect fun deleteFile(path: String): Boolean
+expect fun currentTimeMillis(): Long
