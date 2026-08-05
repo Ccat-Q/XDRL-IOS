@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,8 +25,10 @@ fun ExtensionView(
     useJson: Boolean, onUseJsonChange: (Boolean) -> Unit,
     devMode: Boolean, onDevModeChange: (Boolean) -> Unit,
     csvFiles: List<String>, csvFileName: String, onCsvSelected: (String) -> Unit,
+    whitelist: List<String>, onWhitelistChange: (List<String>) -> Unit,
     onReset: () -> Unit, onBack: () -> Unit
 ) {
+    var newName by remember { mutableStateOf("") }
     Column(Modifier.fillMaxSize().background(Color(0xFF1E1E1E)).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color(0xFFA0C4FF)) }
@@ -35,13 +38,37 @@ fun ExtensionView(
 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
             // 玻璃卡片：日志操作
-            Box(Modifier.fillMaxWidth().background(Color(0x1AFFFFFF), RoundedCornerShape(12.dp)).border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(12.dp)).padding(12.dp)) {
+            Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x0DFFFFFF))), RoundedCornerShape(12.dp)).border(1.5.dp, Color(0x59FFFFFF), RoundedCornerShape(12.dp)).padding(12.dp)) {
                 Column {
                     Text("日志操作", color = Color(0xFFA0C4FF), fontSize = 14.sp)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton({ Logger.clear(); Logger.i("App", "日志已清除") }, Modifier.weight(1f).height(40.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("清除日志", fontSize = 13.sp) }
                         OutlinedButton({ val ok = writeToDocuments("nebula_log.txt", Logger.getRaw()); Logger.i("App", if (ok) "日志已导出" else "导出失败") }, Modifier.weight(1f).height(40.dp), shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFA0C4FF))) { Text("导出日志", fontSize = 13.sp) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+
+            // 玻璃卡片：模组白名单
+            Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x0DFFFFFF))), RoundedCornerShape(12.dp)).border(1.5.dp, Color(0x59FFFFFF), RoundedCornerShape(12.dp)).padding(12.dp)) {
+                Column {
+                    Text("模组白名单 (孤儿清理豁免)", color = Color(0xFFA0C4FF), fontSize = 14.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(newName, { newName = it }, Modifier.weight(1f), placeholder = { Text("输入模组文件名，如 mod.jar", color = Color.Gray, fontSize = 12.sp) }, singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), focusedTextColor = Color.White, unfocusedTextColor = Color.White, cursorColor = Color(0xFFA0C4FF)))
+                        Button({ if (newName.isNotBlank() && newName !in whitelist) { onWhitelistChange(whitelist + newName); newName = "" } }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text("添加", fontSize = 13.sp) }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (whitelist.isEmpty()) {
+                        Text("暂无白名单", color = Color.Gray, fontSize = 12.sp)
+                    } else {
+                        whitelist.forEach { name ->
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(name, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                TextButton({ onWhitelistChange(whitelist - name) }) { Text("删除", color = Color(0xFFFF8080), fontSize = 12.sp) }
+                            }
+                        }
                     }
                 }
             }

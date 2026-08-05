@@ -98,6 +98,21 @@ actual fun openUrl(url: String) { val nsUrl = NSURL.URLWithString(url); if (nsUr
 
 actual fun fetchManifest(url: String, onComplete: (Boolean, String) -> Unit) { val nsUrl = NSURL.URLWithString(url); if (nsUrl == null) { onComplete(false, ""); return }; val req = NSMutableURLRequest.requestWithURL(nsUrl); NSURLSession.sessionWithConfiguration(NSURLSessionConfiguration.defaultSessionConfiguration()).dataTaskWithRequest(req) { data, _, error -> if (error != null || data == null) { onComplete(false, ""); return@dataTaskWithRequest }; val str = NSString.create(data = data!!, encoding = NSUTF8StringEncoding) as? String ?: ""; onComplete(str.isNotEmpty(), str) }.resume() }
 
+actual fun fetchWithHeaders(url: String, headers: Map<String, String>, onComplete: (Boolean, String) -> Unit) {
+    val nsUrl = NSURL.URLWithString(url)
+    if (nsUrl == null) { onComplete(false, ""); return }
+    val req = NSMutableURLRequest.requestWithURL(nsUrl)
+    headers.forEach { (k, v) -> req.setValue(v, forHTTPHeaderField = k) }
+    NSURLSession.sessionWithConfiguration(NSURLSessionConfiguration.defaultSessionConfiguration()).dataTaskWithRequest(req) { data, response, error ->
+        if (error != null) { onComplete(false, ""); return@dataTaskWithRequest }
+        val httpResponse = response as? NSHTTPURLResponse
+        if (httpResponse == null || httpResponse.statusCode !in 200L..299L) { onComplete(false, ""); return@dataTaskWithRequest }
+        val d = data ?: run { onComplete(false, ""); return@dataTaskWithRequest }
+        val str = NSString.create(data = d, encoding = NSUTF8StringEncoding) as? String ?: ""
+        onComplete(str.isNotEmpty(), str)
+    }.resume()
+}
+
 actual fun pingServer(url: String, onResult: (Boolean, String) -> Unit) {
     val start = NSDate.timeIntervalSinceReferenceDate
     val nsUrl = NSURL.URLWithString(url)
@@ -120,6 +135,8 @@ actual class Preferences {
     actual fun putString(key: String, value: String) { ud.setObject(value, forKey = key); ud.synchronize() }
     actual fun putBoolean(key: String, value: Boolean) { ud.setBool(value, forKey = key); ud.synchronize() }
     actual fun putInt(key: String, value: Int) { ud.setInteger(value.toLong(), forKey = key); ud.synchronize() }
+    actual fun getStringList(key: String): List<String> = (ud.stringForKey(key) ?: "").split("\n").filter { it.isNotBlank() }
+    actual fun putStringList(key: String, value: List<String>) { ud.setObject(value.joinToString("\n"), forKey = key); ud.synchronize() }
     actual fun clear() { val d = NSBundle.mainBundle.bundleIdentifier ?: ""; ud.removePersistentDomainForName(d); ud.synchronize() }
 }
 

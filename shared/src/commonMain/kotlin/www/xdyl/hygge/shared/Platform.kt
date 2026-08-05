@@ -10,6 +10,7 @@ expect fun listDocumentsDir(): List<String>
 expect fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Unit, onComplete: (Boolean, String) -> Unit)
 expect fun openUrl(url: String)
 expect fun fetchManifest(url: String, onComplete: (Boolean, String) -> Unit)
+expect fun fetchWithHeaders(url: String, headers: Map<String, String>, onComplete: (Boolean, String) -> Unit)
 expect fun pingServer(url: String, onResult: (Boolean, String) -> Unit)
 expect fun fileSize(path: String): Long?
 expect fun readFileBytes(path: String): ByteArray?

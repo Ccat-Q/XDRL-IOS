@@ -7,5 +7,7 @@ expect class Preferences() {
     fun putString(key: String, value: String)
     fun putBoolean(key: String, value: Boolean)
     fun putInt(key: String, value: Int)
+    fun getStringList(key: String): List<String>
+    fun putStringList(key: String, value: List<String>)
     fun clear()
 }
