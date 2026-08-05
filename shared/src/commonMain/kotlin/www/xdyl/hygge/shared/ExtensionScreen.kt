@@ -1,7 +1,6 @@
 package www.xdyl.hygge.shared
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,7 +36,7 @@ fun ExtensionView(
 
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
             // 玻璃卡片：日志操作
-            Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x0DFFFFFF))), RoundedCornerShape(12.dp)).border(1.5.dp, Color(0x59FFFFFF), RoundedCornerShape(12.dp)).padding(12.dp)) {
+            Box(Modifier.fillMaxWidth().liquidGlass().padding(12.dp)) {
                 Column {
                     Text("日志操作", color = Color(0xFFA0C4FF), fontSize = 14.sp)
                     Spacer(Modifier.height(8.dp))
@@ -51,7 +49,7 @@ fun ExtensionView(
             Spacer(Modifier.height(16.dp))
 
             // 玻璃卡片：模组白名单
-            Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0x2EFFFFFF), Color(0x0DFFFFFF))), RoundedCornerShape(12.dp)).border(1.5.dp, Color(0x59FFFFFF), RoundedCornerShape(12.dp)).padding(12.dp)) {
+            Box(Modifier.fillMaxWidth().liquidGlass().padding(12.dp)) {
                 Column {
                     Text("模组白名单 (孤儿清理豁免)", color = Color(0xFFA0C4FF), fontSize = 14.sp)
                     Spacer(Modifier.height(8.dp))
