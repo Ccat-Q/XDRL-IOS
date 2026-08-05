@@ -11,3 +11,7 @@ expect fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Un
 expect fun openUrl(url: String)
 expect fun fetchManifest(url: String, onComplete: (Boolean, String) -> Unit)
 expect fun pingServer(url: String, onResult: (Boolean, String) -> Unit)
+expect fun fileSize(path: String): Long?
+expect fun readFileBytes(path: String): ByteArray?
+expect fun listJarsInDir(dir: String): List<String>
+expect fun deleteFile(path: String): Boolean

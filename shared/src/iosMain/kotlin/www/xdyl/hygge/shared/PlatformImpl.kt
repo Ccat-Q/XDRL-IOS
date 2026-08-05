@@ -4,6 +4,7 @@ package www.xdyl.hygge.shared
 import kotlinx.cinterop.*
 import platform.Foundation.*
 import platform.UIKit.UIApplication
+import platform.posix.memcpy
 
 actual fun getLauncherRoot(): String = NSHomeDirectory()
 
@@ -48,6 +49,28 @@ actual fun listDocumentsDir(): List<String> {
     val contents = fm.contentsOfDirectoryAtPath(getDocumentsDir(), error = null) ?: return emptyList()
     return (contents as List<String>).filter { it.endsWith(".csv", ignoreCase = true) }
 }
+
+actual fun fileSize(path: String): Long? {
+    val fm = NSFileManager.defaultManager
+    if (!fm.fileExistsAtPath(path)) return null
+    val attrs = fm.attributesOfItemAtPath(path, error = null) ?: return null
+    return (attrs[NSFileSize] as? NSNumber)?.longLongValue
+}
+
+actual fun readFileBytes(path: String): ByteArray? {
+    val data = NSData.dataWithContentsOfFile(path) ?: return null
+    val arr = ByteArray(data.length.toInt())
+    if (arr.isNotEmpty()) arr.usePinned { memcpy(it.addressOf(0), data.bytes, data.length) }
+    return arr
+}
+
+actual fun listJarsInDir(dir: String): List<String> {
+    val fm = NSFileManager.defaultManager
+    val contents = fm.contentsOfDirectoryAtPath(dir, error = null) ?: return emptyList()
+    return (contents as List<Any>).mapNotNull { (it as? String)?.takeIf { s -> s.endsWith(".jar", ignoreCase = true) } }
+}
+
+actual fun deleteFile(path: String): Boolean = NSFileManager.defaultManager.removeItemAtPath(path, error = null)
 
 actual fun downloadFile(url: String, destPath: String, onProgress: (Float) -> Unit, onComplete: (Boolean, String) -> Unit) {
     val nsUrl = NSURL.URLWithString(url)
