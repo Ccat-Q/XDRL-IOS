@@ -9,3 +9,6 @@ build/
 
 # Local configuration
 local.properties
+
+# Local agent state
+.omo/
