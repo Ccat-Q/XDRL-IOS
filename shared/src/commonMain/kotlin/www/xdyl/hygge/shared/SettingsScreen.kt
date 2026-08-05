@@ -20,6 +20,7 @@ fun SettingsView(
     threadCount: String, onThreadChange: (String) -> Unit,
     serverUrl: String, onServerUrlChange: (String) -> Unit,
     cleanOrphan: Boolean, onCleanOrphanChange: (Boolean) -> Unit,
+    unlockThread: Boolean,
     onClearLog: () -> Unit, onAbout: () -> Unit, onErrorCodes: () -> Unit,
     onExtension: () -> Unit, onBack: () -> Unit, onNetwork: () -> Unit
 ) {
@@ -40,9 +41,9 @@ fun SettingsView(
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
             Spacer(Modifier.height(12.dp))
 
-            Text("下载线程数 (20-1024)", color = Color.Gray, fontSize = 13.sp)
+            Text("下载线程数 (20-${if (unlockThread) 1024 else 128})", color = Color.Gray, fontSize = 13.sp)
             Spacer(Modifier.height(4.dp))
-            OutlinedTextField(threadCount, { v -> v.toIntOrNull()?.let { onThreadChange(it.coerceIn(20, 1024).toString()) } }, singleLine = true, modifier = Modifier.fillMaxWidth().height(48.dp),
+            OutlinedTextField(threadCount, { v -> v.toIntOrNull()?.let { onThreadChange(it.coerceIn(20, if (unlockThread) 1024 else 128).toString()) } }, singleLine = true, modifier = Modifier.fillMaxWidth().height(48.dp),
                 textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = Color.White),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFA0C4FF), unfocusedBorderColor = Color(0xFF3A3A3A), cursorColor = Color(0xFFA0C4FF)))
             Spacer(Modifier.height(12.dp))

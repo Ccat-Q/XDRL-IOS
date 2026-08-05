@@ -25,30 +25,6 @@ private val SAMPLE_CSV = """
 ./AppliedFlux-1.21-2.1.5-neoforge.jar,338K,345117,aced1a1af01d7411772634aa13826a18,57e6a2c0f38e660c9e8416f9081d8c515f5ad096d6793d7b7f039e8e210d245b
 """.trimIndent()
 
-private data class ModFile(val name: String)
-
-private fun parseCsv(s: String) = s.lines().filter { it.isNotBlank() }.mapNotNull { l ->
-    val p = l.split(","); ModFile(p[0].trim('"').removePrefix("./"))
-}
-
-private fun parseManifest(json: String): List<ModFile> {
-    val result = mutableListOf<ModFile>()
-    val q = (34.toChar()).toString()
-    val key = q + "name" + q
-    var pos = 0
-    while (true) {
-        val keyIdx = json.indexOf(key, pos)
-        if (keyIdx == -1) break
-        val colon = json.indexOf(':', keyIdx + key.length)
-        val qStart = json.indexOf('"', colon + 1)
-        val qEnd = json.indexOf('"', qStart + 1)
-        if (qStart == -1 || qEnd == -1) break
-        result.add(ModFile(json.substring(qStart + 1, qEnd)))
-        pos = qEnd + 1
-    }
-    return result
-}
-
 @Composable
 fun MainScreen() {
     var screen by remember { mutableStateOf("main") }
@@ -57,6 +33,8 @@ fun MainScreen() {
     var down by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
     var showErrors by remember { mutableStateOf(false) }
+    var showUpdate by remember { mutableStateOf(false) }
+    var updateMsg by remember { mutableStateOf("") }
     val logText by Logger.logs.collectAsState()
     val prefs = remember { Preferences() }
     val csvFiles by remember { derivedStateOf { listDocumentsDir() } }
@@ -76,22 +54,15 @@ fun MainScreen() {
         Logger.i("App", "===== Nebula Updater iOS =====")
         writeToDocuments("file_list.csv", SAMPLE_CSV)
         Logger.i("App", "模式: ${if (useJson) "JSON Manifest" else "CSV文件"}")
-    }
-
-    fun downloadNext(mods: List<ModFile>, i: Int, ok: Int, fail: Int, dir: String) {
-        if (i >= mods.size) { down = false; progress = 1f; status = "$ok 成功, $fail 失败"; return }
-        val m = mods[i]
-        progress = i.toFloat() / mods.size
-        status = "[${i + 1}/${mods.size}] ${m.name}"
-        Logger.i("DL", "GET ${effectiveSrv.trimEnd('/')}/${m.name}")
-        downloadFile("${effectiveSrv.trimEnd('/')}/${m.name}", "$dir/${m.name}", { p -> progress = i.toFloat() / mods.size + p / mods.size }) { good, msg ->
-            if (good) { Logger.i("DL", "OK"); downloadNext(mods, i + 1, ok + 1, fail, dir) }
-            else { Logger.e("DL", "FAIL: $msg"); downloadNext(mods, i + 1, ok, fail + 1, dir) }
+        val localVer = prefs.getString("local_version", "0.0") ?: "0.0"
+        checkForUpdate(effectiveSrv, localVer) { hasUpdate, msg ->
+            if (hasUpdate) { updateMsg = msg; showUpdate = true }
         }
     }
 
     fun startDownload() {
         if (down) return
+        val threadCount = threads.toIntOrNull()?.coerceIn(20, if (unlock) 1024 else 128) ?: 20
         if (useJson) {
             val manifestUrl = "${effectiveSrv.trimEnd('/')}/manifest.json"
             status = "获取JSON列表..."
@@ -102,8 +73,7 @@ fun MainScreen() {
                 if (mods.isEmpty()) { down = false; status = "列表为空"; return@fetchManifest }
                 down = true; progress = 0f
                 Logger.i("DL", "===== ${mods.size} files (JSON) =====")
-                val dir = "${getDocumentsDir()}/$ver/mods"
-                downloadNext(mods, 0, 0, 0, dir)
+                runEngine(mods, threadCount)
             }
         } else {
             val csvContent: String
@@ -116,14 +86,33 @@ fun MainScreen() {
             if (mods.isEmpty()) { status = "列表为空"; return }
             down = true; progress = 0f
             Logger.i("DL", "===== ${mods.size} files (CSV) =====")
-            val dir = "${getDocumentsDir()}/$ver/mods"
-            downloadNext(mods, 0, 0, 0, dir)
+            runEngine(mods, threadCount)
         }
+    }
+
+    fun runEngine(mods: List<ModFile>, threadCount: Int) {
+        val dir = "${getDocumentsDir()}/$ver/mods"
+        DownloadEngine(
+            threads = threadCount,
+            cleanOrphans = clean,
+            whitelist = emptyList(),
+            baseUrl = effectiveSrv,
+            destDir = dir,
+            onStatus = { status = it },
+            onProgress = { progress = it },
+            onFinish = { ok, skipped, fail ->
+                down = false; progress = 1f
+                status = "$ok 成功, $skipped 跳过, $fail 失败"
+                Logger.i("DL", "完成: $ok 成功, $skipped 跳过, $fail 失败")
+            }
+        ).start(mods)
     }
 
     if (showAbout) AlertDialog({ showAbout = false }, title = { Text("Nebula Updater-NU 星云更新器 IOS版", color = Color(0xFFA0C4FF), fontSize = 20.sp) }, text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text("快速方便下载服务器模组", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(6.dp)); Text("本软件为开源项目", color = Color.LightGray, fontSize = 14.sp); Spacer(Modifier.height(4.dp)); TextButton({ openUrl("https://github.com/Ccat-Q/XDRL-IOS") }) { Text("GitHub: Ccat-Q/XDRL-IOS", color = Color(0xFFA0C4FF), fontSize = 14.sp) }; Spacer(Modifier.height(6.dp)); Text("开发者：Ccat_Q", color = Color.LightGray, fontSize = 14.sp); Text("Android版: UNSA-Studio", color = Color.LightGray, fontSize = 14.sp) } }, confirmButton = { TextButton({ showAbout = false }) { Text("确定", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     if (showErrors) AlertDialog({ showErrors = false }, title = { Text("ERROR", color = Color(0xFFA0C4FF)) }, text = { Column { listOf("ERROR01 找不到目录","ERROR02 无权限","ERROR03 网络超时","ERROR05 校验失败","ERROR08 无法获取列表","ERROR10 未知错误").forEach { Text(it, color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(2.dp)) } } }, confirmButton = { TextButton({ showErrors = false }) { Text("关闭", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
+
+    if (showUpdate) AlertDialog({ showUpdate = false }, title = { Text("版本更新", color = Color(0xFFA0C4FF)) }, text = { Column { Text(updateMsg, color = Color.White, fontSize = 14.sp); Spacer(Modifier.height(8.dp)); Text("请通过文件 App 上传最新 file_list.csv 或等待服务器更新", color = Color.Gray, fontSize = 12.sp) } }, confirmButton = { TextButton({ showUpdate = false }) { Text("知道了", color = Color(0xFFA0C4FF)) } }, containerColor = Color(0xFF2A2A2A))
 
     Box(Modifier.fillMaxSize().background(Color(0xFF1E1E1E))) {
         when (screen) {
@@ -131,6 +120,15 @@ fun MainScreen() {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) { Text("Nebula updater-NU", color = Color(0xFFA0C4FF), fontSize = 20.sp); Text("星云更新器-IOS", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 13.sp) }
                     IconButton({ screen = "settings" }, Modifier.size(36.dp)) { Icon(Icons.Default.Settings, "设置", tint = Color(0xFFA0C4FF), modifier = Modifier.size(22.dp)) }
+                }
+                Spacer(Modifier.height(12.dp))
+                val quote = remember { todayQuote() }
+                Box(Modifier.fillMaxWidth().background(Color(0x1AFFFFFF), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Column {
+                        Text("「${quote.textZh}」", color = Color.White.copy(alpha = 0.92f), fontSize = 14.sp)
+                        Spacer(Modifier.height(4.dp))
+                        Text("${quote.textEn} — ${quote.author}", color = Color(0xFFA0C4FF).copy(alpha = 0.8f), fontSize = 12.sp)
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
                 Button({ startDownload() }, enabled = !down, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA0C4FF), contentColor = Color.Black)) { Text(if (down) "下载中..." else "开始下载 (${if (useJson) "JSON" else "CSV"})", fontSize = 16.sp) }
@@ -146,8 +144,8 @@ fun MainScreen() {
                 }
             }
             "network" -> NetworkView(srv) { screen = "settings" }
-            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
-            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, useJson, { j -> useJson = j; prefs.putBoolean("usejson", j) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; useJson = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
+            "settings" -> SettingsView(ver, { v -> ver = v; prefs.putString("ver", v) }, threads, { t -> threads = t; prefs.putInt("threads", t.toIntOrNull() ?: 20) }, srv, { s -> srv = s; prefs.putString("srv", s) }, clean, { c -> clean = c; prefs.putBoolean("clean", c) }, unlock, { Logger.clear() }, { showAbout = true }, { showErrors = true }, { screen = "extension" }, { screen = "main" }, { screen = "network" })
+            "extension" -> ExtensionView(unlock, { u -> unlock = u; prefs.putBoolean("unlock", u) }, localCsv, { l -> localCsv = l; prefs.putBoolean("localcsv", l) }, useJson, { j -> useJson = j; prefs.putBoolean("usejson", j) }, devMode, { d -> devMode = d; prefs.putBoolean("devmode", d) }, csvFiles, csvFileName, { f -> csvFileName = f }, { prefs.clear(); Logger.clear(); ver = "1.21.1-NeoForge"; threads = "20"; srv = ""; clean = true; unlock = false; localCsv = false; useJson = false; devMode = false; Logger.i("App", "已重置") }, { screen = "settings" })
         }
     }
 }

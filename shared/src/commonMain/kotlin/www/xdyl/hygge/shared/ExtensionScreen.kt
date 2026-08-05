@@ -2,6 +2,7 @@ package www.xdyl.hygge.shared
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +23,7 @@ fun ExtensionView(
     useLocalCsv: Boolean, onLocalCsvChange: (Boolean) -> Unit,
     useJson: Boolean, onUseJsonChange: (Boolean) -> Unit,
     devMode: Boolean, onDevModeChange: (Boolean) -> Unit,
+    csvFiles: List<String>, csvFileName: String, onCsvSelected: (String) -> Unit,
     onReset: () -> Unit, onBack: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().background(Color(0xFF1E1E1E)).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))) {
@@ -59,6 +61,23 @@ fun ExtensionView(
 
             SwitchRow("使用本地 CSV 文件列表", useLocalCsv, onLocalCsvChange)
             HorizontalDivider(color = Color(0xFF3A3A3A))
+            Spacer(Modifier.height(8.dp))
+
+            if (useLocalCsv) {
+                Text("选择 Documents 中的 CSV 文件:", color = Color.Gray, fontSize = 13.sp)
+                Spacer(Modifier.height(6.dp))
+                if (csvFiles.isEmpty()) {
+                    Text("Documents 中没有 CSV 文件，请通过文件 App 上传", color = Color(0xFFFFAAAA), fontSize = 12.sp)
+                } else {
+                    csvFiles.forEach { f ->
+                        Row(Modifier.fillMaxWidth().clickable { onCsvSelected(f) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (f == csvFileName) "● " else "○ ", color = if (f == csvFileName) Color(0xFFA0C4FF) else Color.Gray)
+                            Text(f, color = if (f == csvFileName) Color.White else Color.LightGray, fontSize = 14.sp)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
             Spacer(Modifier.height(24.dp))
 
             Button(onClick = onReset, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(10.dp),
