@@ -2,6 +2,13 @@
 
 XDYL (Nebula Updater 星云更新器) — Minecraft mod downloader. Kotlin Multiplatform + Compose Multiplatform (Kotlin 1.9.22, Compose 1.6.0, Gradle 8.9, JDK 17) for iOS, plus a parallel Android/desktop app.
 
+## Git workflow — read and obey (hard rule)
+
+- Reference repository: https://github.com/UNSA-studio/xdyl — **only the `Main` branch content** may be referenced/consulted (as the Android/desktop reference implementation).
+- The **`IOS` branch is the primary development branch**. All commits, pushes, and development work go to `IOS`.
+- **Never modify, commit to, or push to the `main` branch** (local or remote). Treat `main` content as read-only reference material.
+- When fetching from the upstream repo, fetch `unsa/IOS` for development context and `unsa/main` only for reference — never merge main into IOS development work unless explicitly asked.
+
 ## Two independent Gradle builds — do not confuse them
 
 - **Root build** (`./gradlew` from repo root): modules `:shared` (KMP iOS framework, **static**, contains ALL UI in Compose) and `:iosApp` (thin Xcode wrapper). Pure KMP — no Android module, no `local.properties` needed.

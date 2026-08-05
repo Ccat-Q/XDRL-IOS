@@ -2,9 +2,9 @@
 
 on:
   push:
-    branches: [ main ]
+    branches: [ IOS, main ]
   pull_request:
-    branches: [ main ]
+    branches: [ IOS, main ]
 
 jobs:
   ios:
