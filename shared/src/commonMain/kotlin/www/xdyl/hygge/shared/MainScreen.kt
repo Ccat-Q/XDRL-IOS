@@ -194,10 +194,10 @@ fun MainScreen() {
 private fun GlassDialog(
     onDismiss: () -> Unit,
     title: String,
-    content: @Composable () -> Unit,
     confirmText: String? = null,
     onConfirm: (() -> Unit)? = null,
-    dismissText: String? = null
+    dismissText: String? = null,
+    content: @Composable () -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
