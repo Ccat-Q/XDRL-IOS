@@ -38,6 +38,7 @@ XDYL (Nebula Updater 星云更新器) — Minecraft mod downloader. Kotlin Multi
 
 - **No tests exist** anywhere in either build, and no lint/format config beyond `kotlin.code.style=official`. Verification = Gradle compile/link + `xcodebuild` for iOS, `assembleDebug` for Android.
 - **iOS compilation/verification is done via GitHub Actions only — NEVER run local Gradle** (`.gradlew` on this machine). After pushing to `IOS`, `.github/workflows/ios.yml` builds `:shared:linkDebugFrameworkIosArm64` → `xcodebuild archive` → IPA artifact. Wait for that Action run to pass; if it fails, fetch the log and fix locally without invoking Gradle. Local `gradle`/`gradlew` calls are prohibited for build verification.
+- **After every successful push-triggered Action run, download the IPA artifact to local** with `gh run download <run-id> --name iosApp.ipa --dir build/ipa` (run `gh run list --branch IOS --limit 1` to get the run id). Always do this after CI passes — never skip it.
 - Package roots: `www.xdyl.hygge.shared` (iOS/shared), `www.xdyl.hygge.com` (Android), `www.xdyl.hygge.desktop`.
 - Keep files UTF-8 — `-Dfile.encoding=UTF-8` is set in both `gradle.properties` (a prior README encoding fix exists).
 - Do not bump Gradle/Kotlin/Compose versions: both builds pin the same toolchain (Gradle 8.9, Kotlin 1.9.22, Compose 1.6.0).
