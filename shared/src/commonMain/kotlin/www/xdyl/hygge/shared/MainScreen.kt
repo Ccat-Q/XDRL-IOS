@@ -222,8 +222,10 @@ private fun GlassDialog(
                         .padding(20.dp)
                 ) {
                     Column {
-                        Text(title, color = Color(0xFFA0C4FF), fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(12.dp))
+                        Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(10.dp))
+                        HorizontalDivider(color = Color(0x40FFFFFF))
+                        Spacer(Modifier.height(10.dp))
                         Box(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { content() }
                         Spacer(Modifier.height(16.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -252,12 +254,12 @@ internal fun Modifier.liquidGlass(): Modifier = this
         RoundedCornerShape(20.dp)
     )
     .drawWithContent {
-        drawContent()
-        // 顶部高光：内部 1.5dp 白色发光条
+        // 顶部高光：内部 1.5dp 白色发光条（先画，作为玻璃表面光效，内容在上层保持清晰）
         drawRoundRect(
             brush = Brush.verticalGradient(listOf(Color(0x99FFFFFF), Color(0x00FFFFFF))),
             topLeft = Offset(size.width * 0.08f, size.height * 0.02f),
             size = Size(size.width * 0.84f, size.height * 0.05f),
             cornerRadius = CornerRadius(20.dp.toPx() * 2, 20.dp.toPx() * 2)
         )
+        drawContent()
     }
