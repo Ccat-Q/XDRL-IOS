@@ -44,8 +44,8 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build shared framework for iOS device
-      run: ./gradlew :shared:linkDebugFrameworkIosArm64
+    - name: Build shared framework for iOS (device + simulator)
+      run: ./gradlew :shared:linkDebugFrameworkIosArm64 :shared:linkDebugFrameworkIosSimulatorArm64
 
     - name: Archive iOS app
       run: |
@@ -79,3 +79,54 @@ jobs:
       with:
         name: iosApp.ipa
         path: build/iosApp.ipa
+
+    - name: Run UI tests with screen recording
+      run: |
+        set +e
+        # 选择第一个可用的 iPhone 模拟器
+        UDID=$(xcrun simctl list devices available -j | python3 -c "
+        import json, sys
+        data = json.load(sys.stdin)
+        devices = [d for v in data['devices'].values() for d in v]
+        iphones = [d for d in devices if d['name'].startswith('iPhone') and d['isAvailable']]
+        print(iphones[0]['udid'] if iphones else '')")
+        if [ -z "$UDID" ]; then echo "::error::No iPhone simulator found"; exit 1; fi
+        echo "Using simulator: $UDID"
+        xcrun simctl boot "$UDID" 2>/dev/null || true
+        xcrun simctl bootstatus "$UDID" -b
+        mkdir -p build/test-recordings
+        # 全程录屏（后台持续录制，测试结束后终止并生成 full-run.mp4）
+        xcrun simctl io "$UDID" recordVideo --codec h264 build/test-recordings/full-run.mp4 &
+        REC_PID=$!
+        # 模拟器构建需要 iosSimulatorArm64 的 framework，通过命令行覆盖 FRAMEWORK_SEARCH_PATHS
+        xcodebuild test \
+          -project iosApp/iosApp.xcodeproj \
+          -scheme iosApp \
+          -destination "platform=iOS Simulator,id=$UDID" \
+          -resultBundlePath build/test.xcresult \
+          CODE_SIGNING_ALLOWED=NO \
+          "FRAMEWORK_SEARCH_PATHS=$PWD/shared/build/bin/iosSimulatorArm64/debugFramework"
+        TEST_EXIT=$?
+        sleep 3
+        kill -INT "$REC_PID" 2>/dev/null || true
+        wait "$REC_PID" 2>/dev/null || true
+        echo "xcodebuild test exit code: $TEST_EXIT"
+        exit $TEST_EXIT
+
+    - name: Export test recordings and attachments
+      if: always()
+      run: |
+        mkdir -p build/test-recordings/attachments
+        # Xcode 16+: 导出 .xcresult 内的自动截图/录屏附件；旧版回退到通用导出
+        xcrun xcresulttool export attachments --path build/test.xcresult --output-path build/test-recordings/attachments 2>/dev/null || \
+          xcrun xcresulttool export --type file --path build/test.xcresult --output-path build/test-recordings/attachments 2>/dev/null || true
+        # 测试结果摘要输出到日志
+        xcrun xcresulttool get test-results summary --path build/test.xcresult 2>/dev/null || true
+
+    - name: Upload UI test recordings
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: iosApp-test-recordings
+        path: build/test-recordings
+        retention-days: 14
