@@ -1,6 +1,6 @@
 package www.xdyl.hygge.shared
 
-import androidx.compose.ui.ExperimentalComposeApi
+import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.ui.platform.AccessibilitySyncOptions
 import androidx.compose.ui.window.ComposeUIViewController
 import kotlin.native.Platform
