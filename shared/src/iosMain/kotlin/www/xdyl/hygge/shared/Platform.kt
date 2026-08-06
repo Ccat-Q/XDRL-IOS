@@ -3,9 +3,10 @@ package www.xdyl.hygge.shared
 import androidx.compose.runtime.ExperimentalComposeApi
 import androidx.compose.ui.platform.AccessibilitySyncOptions
 import androidx.compose.ui.window.ComposeUIViewController
+import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.Platform
 
-@OptIn(ExperimentalComposeApi::class)
+@OptIn(ExperimentalComposeApi::class, ExperimentalNativeApi::class)
 fun MainViewController() = ComposeUIViewController(
     configure = {
         // CMP 1.6 的 iOS 可访问性树默认只在辅助功能服务运行时才同步，
