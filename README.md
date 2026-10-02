@@ -1,4 +1,6 @@
 ﻿# Nebula Updater-NU 星云更新器 iOS
+## 通知：此更新器由于服务器版本更新，改变了客户端安装方式（由mod下载改为整合包+额外mod或纯整合包），此仓库将被长期暂停开发
+>适配度更高，整合Windows新版更新器的 XDYL-Updater2 见  https://github.com/Ccat-Q/XDYL-Updater2-IOS
 
 > 快速下载 Minecraft 模组的 iOS 客户端
 
